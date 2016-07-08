@@ -52,6 +52,7 @@ std::vector<Texture> textures;
 std::unordered_map<std::string, Material> materials;
 std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
+// float lightPosition[] = {0, 20, 1, 1};
 // -----------------------------------------
 
 std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
@@ -194,6 +195,7 @@ void drawCharacter() {
     Material material;
     bool validMaterial = false;
     unsigned faceNumber = 0;
+    auto queueCopy = faceMaterials;
 
     glBindTexture(GL_TEXTURE_2D, texture);
     for (auto face : faces) {
@@ -207,6 +209,7 @@ void drawCharacter() {
             glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ka);
             glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.kd);
             glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material.ks);
+            glColor3f(material.kd[0], material.kd[1], material.kd[2]);
         }
         glBegin(GL_TRIANGLES);
         for (unsigned i = 0; i < 3; i++) {
@@ -225,6 +228,7 @@ void drawCharacter() {
         faceNumber++;
     }
     glPopMatrix();
+    faceMaterials = queueCopy;
 }
 
 void reshape(int newWidth, int newHeight) {
@@ -259,6 +263,11 @@ bool init() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
+
+    // glEnable(GL_LIGHTING);
+    // glEnable(GL_LIGHT0);
+    // glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     loadObj(model);
