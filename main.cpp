@@ -3,6 +3,7 @@
 #include <GL/glut.h>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
 
 #define TRACE(x) std::cout << (#x) << " = " << (x) << std::endl
@@ -16,9 +17,27 @@
     }
 #define ECHO(x) std::cout << (x) << std::endl
 
+// Types
 using Point = std::array<double, 3>;
 using Triangle = std::array<Point, 3>;
 using Texture = std::array<double, 2>;
+struct Material {
+    double ns, ni, d;
+    Point ka, kd, ks;
+    unsigned illum;
+};
+
+std::ostream& operator<<(std::ostream& stream, const Point& point) {
+    return stream << "(" << point[0] << "," << point[1] << "," << point[2] << ")";
+}
+
+std::ostream& operator<<(std::ostream& stream, const Triangle& triangle) {
+    return stream << "(" << triangle[0] << "," << triangle[1] << "," << triangle[2] << ")";
+}
+
+std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
+    return stream << "(" << texture[0] << "," << texture[1] << ")";
+}
 
 // Globals
 std::string title = "YAHMA";
@@ -29,18 +48,74 @@ std::vector<Point> vertices;
 std::vector<Point> normals;
 std::vector<Triangle> faces;
 std::vector<Texture> textures;
+std::unordered_map<std::string, Material> materials;
+std::unordered_map<unsigned, std::string> faceMaterials;
 GLuint texture;
 // -----------------------------------------
+
+std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
+    std::unordered_map<std::string, Material> result;
+    std::string name;
+    Material material;
+    bool valid = false;
+    std::ifstream input(filename);
+    std::string line;
+    while (std::getline(input, line)) {
+        if (line.size() == 0 || line[0] == '#') {
+            continue;
+        }
+        std::istringstream stream(line);
+        std::string command;
+        stream >> command;
+        if (command == "newmtl") {
+            if (valid) {
+                result.insert(std::make_pair(name, material));
+                material = Material();
+            }
+            stream >> name;
+            valid = true;
+        } else if (command == "Ns") {
+            stream >> material.ns;
+        } else if (command == "Ka") {
+            stream >> material.ka[0];
+            stream >> material.ka[1];
+            stream >> material.ka[2];
+        } else if (command == "Kd") {
+            stream >> material.kd[0];
+            stream >> material.kd[1];
+            stream >> material.kd[2];
+        } else if (command == "Ks") {
+            stream >> material.ks[0];
+            stream >> material.ks[1];
+            stream >> material.ks[2];
+        } else if (command == "Ni") {
+            stream >> material.ni;
+        } else if (command == "d") {
+            stream >> material.d;
+        } else if (command == "illum") {
+            stream >> material.illum;
+        }
+    }
+
+    if (valid) {
+        result.insert(std::make_pair(name, material));
+    }
+
+    return result;
+}
 
 void loadObj(const std::string& filename) {
     vertices.clear();
     normals.clear();
     faces.clear();
     textures.clear();
+    materials.clear();
+    faceMaterials.clear();
     vertices.push_back(Point());
     normals.push_back(Point());
     faces.push_back(Triangle());
     textures.push_back(Texture());
+
     std::ifstream input(filename);
     std::string line;
     while (std::getline(input, line)) {
@@ -86,6 +161,14 @@ void loadObj(const std::string& filename) {
                 }
             }
             faces.push_back(face);
+        } else if (command == "mtllib") {
+            std::string filename;
+            stream >> filename;
+            materials = parseMtl(filename);
+        } else if (command == "usemtl") {
+            std::string name;
+            stream >> name;
+            faceMaterials.insert(std::make_pair(faces.size(), name));
         }
     }
 }
