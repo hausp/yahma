@@ -64,8 +64,14 @@ void loadObj(const std::string& filename) {
         } else if (command == "f") {
             Triangle face;
             for (unsigned i = 0; i < 3; i++) {
-                for (unsigned j = 0; j < 3; j++) {
-                    stream >> face[j][i];
+                std::string triple;
+                stream >> triple;
+                std::istringstream iss(triple);
+                std::string container;
+                unsigned j = 0;
+                while (std::getline(iss, container, '/')) {
+                    face[j][i] = stoi(container);
+                    j++;
                 }
             }
             faces.push_back(face);
@@ -74,9 +80,9 @@ void loadObj(const std::string& filename) {
 }
 
 void drawCharacter() {
-    ECHO("Drawing character...");
     glPushMatrix();
-    glScaled(3.0, 3.0, 3.0);
+    glTranslated(0, 0.3, 0);
+    glScaled(0.3, 0.3, 0.3);
 
     glBindTexture(GL_TEXTURE_2D, texture);
     for (auto face : faces) {
@@ -111,22 +117,16 @@ void display() {
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glLoadIdentity();
 
-    //drawCharacter();
-    glBegin(GL_TRIANGLES); // início triângulo
-    glVertex3f( 0.0f, 1.0f, 0.0f); // Topo
-    glVertex3f(-1.0f,-1.0f, 0.0f); // Esquerda embaixo
-    glVertex3f( 1.0f,-1.0f, 0.0f); // Direita embaixo
-    glEnd(); // fim triângulo
+    drawCharacter();
 
     glutSwapBuffers();
 }
 
 void idle() {
-    display();
+    glutPostRedisplay();
 }
 
 bool init() {
-    ECHO("init");
     glShadeModel(GL_SMOOTH);
     // Color for cleaning the window
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
