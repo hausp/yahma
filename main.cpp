@@ -2,6 +2,7 @@
 #include <fstream>
 #include <GL/glut.h>
 #include <iostream>
+#include <queue>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
@@ -23,7 +24,7 @@ using Triangle = std::array<Point, 3>;
 using Texture = std::array<double, 2>;
 struct Material {
     double ns, ni, d;
-    Point ka, kd, ks;
+    float ka[4], kd[4], ks[4];
     unsigned illum;
 };
 
@@ -49,7 +50,7 @@ std::vector<Point> normals;
 std::vector<Triangle> faces;
 std::vector<Texture> textures;
 std::unordered_map<std::string, Material> materials;
-std::unordered_map<unsigned, std::string> faceMaterials;
+std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
 // -----------------------------------------
 
@@ -80,14 +81,17 @@ std::unordered_map<std::string, Material> parseMtl(const std::string& filename) 
             stream >> material.ka[0];
             stream >> material.ka[1];
             stream >> material.ka[2];
+            material.ka[3] = 1;
         } else if (command == "Kd") {
             stream >> material.kd[0];
             stream >> material.kd[1];
             stream >> material.kd[2];
+            material.kd[3] = 1;
         } else if (command == "Ks") {
             stream >> material.ks[0];
             stream >> material.ks[1];
             stream >> material.ks[2];
+            material.ks[3] = 1;
         } else if (command == "Ni") {
             stream >> material.ni;
         } else if (command == "d") {
@@ -110,7 +114,9 @@ void loadObj(const std::string& filename) {
     faces.clear();
     textures.clear();
     materials.clear();
-    faceMaterials.clear();
+    while (!faceMaterials.empty()) {
+        faceMaterials.pop();    
+    }
     vertices.push_back(Point());
     normals.push_back(Point());
     faces.push_back(Triangle());
@@ -168,7 +174,7 @@ void loadObj(const std::string& filename) {
         } else if (command == "usemtl") {
             std::string name;
             stream >> name;
-            faceMaterials.insert(std::make_pair(faces.size(), name));
+            faceMaterials.push(std::make_pair(faces.size(), name));
         }
     }
 }
@@ -185,8 +191,23 @@ void drawCharacter() {
 
     bool hasTextures = (textures.size() > 0);
     bool hasNormals = (normals.size() > 0);
+    Material material;
+    bool validMaterial = false;
+    unsigned faceNumber = 0;
+
     glBindTexture(GL_TEXTURE_2D, texture);
     for (auto face : faces) {
+        if (faceMaterials.size() > 0 && faceNumber == faceMaterials.front().first) {
+            material = materials[faceMaterials.front().second];
+            faceMaterials.pop();
+            validMaterial = true;
+        }
+
+        if (validMaterial) {
+            glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ka);
+            glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.kd);
+            glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material.ks);
+        }
         glBegin(GL_TRIANGLES);
         for (unsigned i = 0; i < 3; i++) {
             auto vertex = vertices[face[0][i]];
@@ -201,6 +222,7 @@ void drawCharacter() {
             }
         }
         glEnd();
+        faceNumber++;
     }
     glPopMatrix();
 }
