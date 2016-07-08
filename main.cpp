@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
 
 // Globals
 std::string title = "YAHMA";
-std::string model = "dinomech.obj";
+std::string model = "subzero.obj";
 unsigned winWidth = 800;
 unsigned winHeight = 600;
 std::vector<Point> vertices;
@@ -52,7 +52,7 @@ std::vector<Texture> textures;
 std::unordered_map<std::string, Material> materials;
 std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
-// float lightPosition[] = {0, 20, 1, 1};
+float lightPosition[] = {0, 20, 1, 1};
 // -----------------------------------------
 
 std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
@@ -183,12 +183,12 @@ void loadObj(const std::string& filename) {
 void drawCharacter() {
     glPushMatrix();
     // Subzero
-    // glTranslated(0, 0.3, 0);
-    // glScaled(0.3, 0.3, 0.3);
+    glTranslated(0, 0.3, 0);
+    glScaled(0.3, 0.3, 0.3);
     // Dinomech
-    glRotated(90, 0, 1, 0);
-    glTranslated(0, -0.9, 0);
-    glScaled(0.04, 0.04, 0.04);
+    // glRotated(90, 0, 1, 0);
+    // glTranslated(0, -0.9, 0);
+    // glScaled(0.04, 0.04, 0.04);
 
     bool hasTextures = (textures.size() > 0);
     bool hasNormals = (normals.size() > 0);
@@ -209,7 +209,6 @@ void drawCharacter() {
             glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ka);
             glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.kd);
             glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material.ks);
-            glColor3f(material.kd[0], material.kd[1], material.kd[2]);
         }
         glBegin(GL_TRIANGLES);
         for (unsigned i = 0; i < 3; i++) {
@@ -264,9 +263,13 @@ bool init() {
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
 
-    // glEnable(GL_LIGHTING);
-    // glEnable(GL_LIGHT0);
-    // glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glMateriali(GL_FRONT, GL_SHININESS, 90);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
