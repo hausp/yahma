@@ -43,6 +43,14 @@ std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
 // Globals
 std::string title = "YAHMA";
 std::string model = "subzero.obj";
+std::unordered_map<std::string, int> keyMap = {
+    {"LEFT", 100},
+    {"UP", 101},
+    {"RIGHT", 102},
+    {"DOWN", 103},
+    {"LSHIFT", 112},
+    {"RSHIFT", 113}
+};
 unsigned winWidth = 800;
 unsigned winHeight = 600;
 std::vector<Point> vertices;
@@ -53,9 +61,14 @@ std::unordered_map<std::string, Material> materials;
 std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
+int dx = 0;
+int dy = 1;
+int dz = 0;
 int angle = 0;
 // -----------------------------------------
 
+// Receives the name of a .mtl file and returns a map associating the name
+// of each material to a structure containing its properties.
 std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
     std::unordered_map<std::string, Material> result;
     std::string name;
@@ -110,6 +123,7 @@ std::unordered_map<std::string, Material> parseMtl(const std::string& filename) 
     return result;
 }
 
+// Receives the name of a .obj file and resets all data structures to match it.
 void loadObj(const std::string& filename) {
     vertices.clear();
     normals.clear();
@@ -181,10 +195,11 @@ void loadObj(const std::string& filename) {
     }
 }
 
+// Draws the main character of this simulation.
 void drawCharacter() {
     glPushMatrix();
     // Subzero
-    glRotated(angle, 0, 1, 0);
+    glRotated(angle, dx, dy, dz);
     glTranslated(0, 0.3, 0);
     glScaled(0.3, 0.3, 0.3);
     // Dinomech
@@ -233,6 +248,7 @@ void drawCharacter() {
     faceMaterials = queueCopy;
 }
 
+// Called when the window is resized.
 void reshape(int newWidth, int newHeight) {
     winWidth = newWidth;
     winHeight = newHeight;
@@ -245,6 +261,7 @@ void reshape(int newWidth, int newHeight) {
     glLoadIdentity();
 }
 
+// Clears and displays the screen.
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
@@ -255,11 +272,13 @@ void display() {
     glutSwapBuffers();
 }
 
+// Updates all animated properties and the screen.
 void idle() {
     angle = (angle + 1) % 360;
     glutPostRedisplay();
 }
 
+// Initializes all important structures.
 bool init() {
     glShadeModel(GL_SMOOTH);
     // Color for cleaning the window
@@ -280,14 +299,32 @@ bool init() {
     return true;
 }
 
+// Checks if a given special key code corresponds to a given key name.
+bool is(int key, const std::string& keyName) {
+    return key == keyMap[keyName];
+}
+
+// Called when a normal key is pressed.
 void onKeyPress(unsigned char key, int mouseX, int mouseY) {
     ECHO("NORMAL");
     TRACE(key);
 }
 
+// Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
-    ECHO("SPECIAL");
-    TRACE(key);
+    if (is(key, "LEFT") || is(key, "RIGHT")) {
+        dx = 0;
+        dy = 1;
+        dz = 0;
+    } else if (is(key, "UP") || is(key, "DOWN")) {
+        dx = 0;
+        dy = 0;
+        dz = 1;
+    } else if (is(key, "LSHIFT") || is(key, "RSHIFT")) {
+        dx = 1;
+        dy = 0;
+        dz = 0;
+    }
 }
 
 int main(int argc, char** argv) {
