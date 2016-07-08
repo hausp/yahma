@@ -22,7 +22,7 @@ using Texture = std::array<double, 2>;
 
 // Globals
 std::string title = "YAHMA";
-std::string model = "subzero.obj";
+std::string model = "dinomech.obj";
 unsigned winWidth = 800;
 unsigned winHeight = 600;
 std::vector<Point> vertices;
@@ -37,6 +37,10 @@ void loadObj(const std::string& filename) {
     normals.clear();
     faces.clear();
     textures.clear();
+    vertices.push_back(Point());
+    normals.push_back(Point());
+    faces.push_back(Triangle());
+    textures.push_back(Texture());
     std::ifstream input(filename);
     std::string line;
     while (std::getline(input, line)) {
@@ -88,8 +92,13 @@ void loadObj(const std::string& filename) {
 
 void drawCharacter() {
     glPushMatrix();
-    glTranslated(0, 0.3, 0);
-    glScaled(0.3, 0.3, 0.3);
+    // Subzero
+    // glTranslated(0, 0.3, 0);
+    // glScaled(0.3, 0.3, 0.3);
+    // Dinomech
+    glRotated(90, 0, 1, 0);
+    glTranslated(0, -0.9, 0);
+    glScaled(0.04, 0.04, 0.04);
 
     bool hasTextures = (textures.size() > 0);
     bool hasNormals = (normals.size() > 0);
