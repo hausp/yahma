@@ -53,6 +53,7 @@ std::unordered_map<std::string, Material> materials;
 std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
+int angle = 0;
 // -----------------------------------------
 
 std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
@@ -183,6 +184,7 @@ void loadObj(const std::string& filename) {
 void drawCharacter() {
     glPushMatrix();
     // Subzero
+    glRotated(angle, 0, 1, 0);
     glTranslated(0, 0.3, 0);
     glScaled(0.3, 0.3, 0.3);
     // Dinomech
@@ -254,6 +256,7 @@ void display() {
 }
 
 void idle() {
+    angle = (angle + 1) % 360;
     glutPostRedisplay();
 }
 
