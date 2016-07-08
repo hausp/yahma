@@ -208,7 +208,8 @@ void drawCharacter() {
         if (validMaterial) {
             glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ka);
             glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.kd);
-            glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material.ks);
+            glMaterialfv(GL_FRONT, GL_SPECULAR, material.ks);
+            glMateriali(GL_FRONT, GL_SHININESS, material.ns / 1000.0 * 128);
         }
         glBegin(GL_TRIANGLES);
         for (unsigned i = 0; i < 3; i++) {
@@ -265,7 +266,6 @@ bool init() {
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    glMateriali(GL_FRONT, GL_SHININESS, 90);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
