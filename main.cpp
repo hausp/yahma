@@ -21,6 +21,8 @@ using Triangle = std::array<Point, 3>;
 using Texture = std::array<double, 2>;
 
 // Globals
+std::string title = "YAHMA";
+std::string model = "subzero.obj";
 unsigned winWidth = 800;
 unsigned winHeight = 600;
 std::vector<Point> vertices;
@@ -64,6 +66,11 @@ void loadObj(const std::string& filename) {
         } else if (command == "f") {
             Triangle face;
             for (unsigned i = 0; i < 3; i++) {
+                for (unsigned j = 0; j < 3; j++) {
+                    face[i][j] = 0;
+                }
+            }
+            for (unsigned i = 0; i < 3; i++) {
                 std::string triple;
                 stream >> triple;
                 std::istringstream iss(triple);
@@ -84,16 +91,22 @@ void drawCharacter() {
     glTranslated(0, 0.3, 0);
     glScaled(0.3, 0.3, 0.3);
 
+    bool hasTextures = (textures.size() > 0);
+    bool hasNormals = (normals.size() > 0);
     glBindTexture(GL_TEXTURE_2D, texture);
     for (auto face : faces) {
         glBegin(GL_TRIANGLES);
         for (unsigned i = 0; i < 3; i++) {
             auto vertex = vertices[face[0][i]];
-            auto currTexture = textures[face[1][i]];
-            auto normal = normals[face[2][i]];
-            glTexCoord2d(currTexture[0], currTexture[1]);
             glVertex3d(vertex[0], vertex[1], vertex[2]);
-            glNormal3d(normal[0], normal[1], normal[2]);
+            if (hasTextures) {
+                auto currTexture = textures[face[1][i]];
+                glTexCoord2d(currTexture[0], currTexture[1]);                
+            }
+            if (hasNormals) {
+                auto normal = normals[face[2][i]];
+                glNormal3d(normal[0], normal[1], normal[2]);                
+            }
         }
         glEnd();
     }
@@ -134,7 +147,7 @@ bool init() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    loadObj("subzero.obj");
+    loadObj(model);
     return true;
 }
 
@@ -153,7 +166,7 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(winWidth, winHeight);
     glutInitWindowPosition(0, 0);
-    auto window = glutCreateWindow("YAHMA");
+    auto window = glutCreateWindow(title.c_str());
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
     glutKeyboardFunc(onKeyPress);
