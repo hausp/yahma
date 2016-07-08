@@ -97,23 +97,32 @@ void drawCharacter() {
 void reshape(int newWidth, int newHeight) {
     winWidth = newWidth;
     winHeight = newHeight;
-    ECHO("reshape");
+
+    glViewport(0, 0, winWidth, winHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 void display() {
-    ECHO("display");
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glLoadIdentity();
+
+    //drawCharacter();
+    glBegin(GL_TRIANGLES); // início triângulo
+    glVertex3f( 0.0f, 1.0f, 0.0f); // Topo
+    glVertex3f(-1.0f,-1.0f, 0.0f); // Esquerda embaixo
+    glVertex3f( 1.0f,-1.0f, 0.0f); // Direita embaixo
+    glEnd(); // fim triângulo
+
     glutSwapBuffers();
 }
 
 void idle() {
-    static bool onlyOnce = false;
-    if (!onlyOnce) {
-        ECHO("idle");
-        onlyOnce = true;
-    }
+    display();
 }
 
 bool init() {
@@ -126,7 +135,6 @@ bool init() {
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     loadObj("subzero.obj");
-    drawCharacter();
     return true;
 }
 
