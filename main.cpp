@@ -66,7 +66,7 @@ GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
 unsigned long long globalTime = 0;
 clock_t lastUpdate = 0;
-clock_t updateInterval = 0.008 * CLOCKS_PER_SEC;
+clock_t updateInterval = 0.005 * CLOCKS_PER_SEC;
 
 float ambientCoefs[] = {1, 1, 1, 0.7};
 float diffuseCoefs[] = {1, 1, 1, 1};
@@ -290,8 +290,9 @@ double oscillate(unsigned period, int from, int to) {
 
 // Updates all animated properties and the screen.
 void idle() {
-    globalTime++;
     if (clock() - lastUpdate >= updateInterval) {
+        lastUpdate = clock();
+        globalTime++;
         unsigned period;
         reset();
         if (mode == Mode::JUMPING_JACKS) {
