@@ -7,6 +7,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
+#include <ctime>
 
 #define TRACE(x) std::cout << (#x) << " = " << (x) << std::endl
 #define TRACE_L(x,y) std::cout << (x) << " = " << (y) << std::endl
@@ -64,6 +65,8 @@ unsigned winHeight = 600;
 GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
 unsigned long long globalTime = 0;
+clock_t lastUpdate = 0;
+clock_t updateInterval = 0.008 * CLOCKS_PER_SEC;
 
 double robotAngle = 30;
 float ambientCoefs[] = {1, 1, 1, 0.7};
@@ -236,12 +239,15 @@ double oscillate(unsigned period, int lowerValue, int higherValue) {
 
 // Updates all animated properties and the screen.
 void idle() {
-    globalTime++;
-    // leftArmAngles[2] = oscillate(100, -70, 70);
-    // rightArmAngles[2] = oscillate(100, -70, 70);
-    leftLegAngles[0] = oscillate(100, -50, 50);
-    rightLegAngles[0] = oscillate(100, 50, -50);
-    glutPostRedisplay();
+    if (clock() - lastUpdate >= updateInterval) {
+        lastUpdate = clock();
+        globalTime++;
+        // leftArmAngles[2] = oscillate(100, -70, 70);
+        // rightArmAngles[2] = oscillate(100, -70, 70);
+        leftLegAngles[0] = oscillate(100, -50, 50);
+        rightLegAngles[0] = oscillate(100, 50, -50);
+        glutPostRedisplay();
+    }
 }
 
 // Initializes all important structures.
