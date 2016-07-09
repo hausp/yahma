@@ -1,5 +1,6 @@
 #include <array>
 #include <cmath>
+#include <ctime>
 #include <fstream>
 #include <GL/glut.h>
 #include <iostream>
@@ -7,7 +8,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-#include <ctime>
 
 #define TRACE(x) std::cout << (#x) << " = " << (x) << std::endl
 #define TRACE_L(x,y) std::cout << (x) << " = " << (y) << std::endl
@@ -68,23 +68,38 @@ unsigned long long globalTime = 0;
 clock_t lastUpdate = 0;
 clock_t updateInterval = 0.008 * CLOCKS_PER_SEC;
 
-double robotAngle = 30;
 float ambientCoefs[] = {1, 1, 1, 0.7};
 float diffuseCoefs[] = {1, 1, 1, 1};
 float specularCoefs[] = {1, 1, 1, 0.2};
 int specularExponent = 90;
+
+enum class Mode {
+    WALKING,
+    JUMPING_JACKS
+};
+auto mode = Mode::WALKING;
+
+double neckHeight = 0.05;
+double jointRadius = 0.04;
+double shoulderOffset = 0.35;
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
-Size armSize = {0.25, 0.05, 0.05};
-Size legSize = {0.05, 0.3, 0.05};
-double neckHeight = 0.05;
+Size armSize = {0.125, 0.05, 0.05};
+Size forearmSize = {0.125, 0.05, 0.05};
+Size legSize = {0.05, 0.15, 0.05};
+Size thighSize = {0.05, 0.25, 0.05};
 Point robotCenter = {0, 0, 0};
+AngleGroup robotAngles = {0, 30, 0};
 AngleGroup headAngles = {0, 0, 0};
-AngleGroup leftArmAngles = {0, 0, -80};
-AngleGroup rightArmAngles = {0, 0, 80};
-AngleGroup leftLegAngles = {0, 0, 0};
-AngleGroup rightLegAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
+AngleGroup leftArmAngles = {0, 0, 0};
+AngleGroup leftForearmAngles = {0, 0, 0};
+AngleGroup rightArmAngles = {0, 0, 0};
+AngleGroup rightForearmAngles = {0, 0, 0};
+AngleGroup leftThighAngles = {0, 0, 0};
+AngleGroup leftLegAngles = {0, 0, 0};
+AngleGroup rightThighAngles = {0, 0, 0};
+AngleGroup rightLegAngles = {0, 0, 0};
 // -----------------------------------------
 
 void rotate(const AngleGroup& angles) {
@@ -98,29 +113,6 @@ void box(const Size& size) {
     glScaled(size.width, size.height, size.thickness);
     glutSolidCube(1);
     glPopMatrix();
-    // Front
-    // glBegin(GL_POLYGON);
-    // glVertex3d(-size.width/2, -size.height/2, -size.thickness/2);
-    // glVertex3d(size.width/2, -size.height/2, -size.thickness/2);
-    // glVertex3d(size.width/2, size.height/2, -size.thickness/2);
-    // glVertex3d(-size.width/2, size.height/2, -size.thickness/2);
-    // glEnd();
-
-    // // Back
-    // glBegin(GL_POLYGON);
-    // glVertex3d(-size.width/2, -size.height/2, size.thickness/2);
-    // glVertex3d(size.width/2, -size.height/2, size.thickness/2);
-    // glVertex3d(size.width/2, size.height/2, size.thickness/2);
-    // glVertex3d(-size.width/2, size.height/2, size.thickness/2);
-    // glEnd();
-
-    // // Left
-    // glBegin(GL_POLYGON);
-    // glVertex3d(-size.width/2, -size.height/2, size.thickness/2);
-    // glVertex3d(size.width/2, -size.height/2, -size.thickness/2);
-    // glVertex3d(size.width/2, size.height/2, size.thickness/2);
-    // glVertex3d(-size.width/2, size.height/2, -size.thickness/2);
-    // glEnd();
 }
 
 void drawHead() {
@@ -136,14 +128,23 @@ void drawHead() {
 void drawLeftArm() {
     glPushMatrix();
     glTranslated(robotCenter[0] + bodySize.width/2,
-                 robotCenter[1] + bodySize.height/4,
+                 robotCenter[1] + bodySize.height * shoulderOffset,
                  robotCenter[2]);
+
+    glutSolidSphere(jointRadius, 100, 100);
+
     rotate(leftArmAngles);
     glTranslated(armSize.width/2, 0, 0);
-
-    // static GLUquadricObj* quadric = gluNewQuadric();
-    // gluCylinder(quadric, 0.025, 0.025, armSize.height, 100, 100);
     box(armSize);
+
+    glTranslated(armSize.width/2 + jointRadius/2, 0, 0);
+    glutSolidSphere(jointRadius, 100, 100);
+
+    glPushMatrix();
+    rotate(leftForearmAngles);
+    glTranslated(forearmSize.width/2, 0, 0);
+    box(forearmSize);
+    glPopMatrix();
 
     glPopMatrix();
 }
@@ -151,44 +152,83 @@ void drawLeftArm() {
 void drawRightArm() {
     glPushMatrix();
     glTranslated(robotCenter[0] - bodySize.width/2,
-                 robotCenter[1] + bodySize.height/4,
+                 robotCenter[1] + bodySize.height * shoulderOffset,
                  robotCenter[2]);
+
+    glutSolidSphere(jointRadius, 100, 100);
+
     rotate(rightArmAngles);
     glTranslated(-armSize.width/2, 0, 0);
     box(armSize);
+
+    glTranslated(-armSize.width/2 - jointRadius/2, 0, 0);
+    glutSolidSphere(jointRadius, 100, 100);
+
+    glPushMatrix();
+    rotate(rightForearmAngles);
+    glTranslated(-forearmSize.width/2, 0, 0);
+    box(forearmSize);
+    glPopMatrix();
+
     glPopMatrix();
 }
 
 void drawLeftLeg() {
     glPushMatrix();
-    glTranslated(robotCenter[0] - bodySize.width/4,
+    glTranslated(robotCenter[0] + bodySize.width/4,
                  robotCenter[1] - bodySize.height/2,
                  robotCenter[2]);
+
+    glutSolidSphere(jointRadius, 100, 100);
+
     rotate(leftLegAngles);
     glTranslated(0, -legSize.height/2, 0);
     box(legSize);
+
+    glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
+    glutSolidSphere(jointRadius, 100, 100);
+
+    glPushMatrix();
+    rotate(leftThighAngles);
+    glTranslated(0, -thighSize.height/2, 0);
+    box(thighSize);
+    glPopMatrix();
+
     glPopMatrix();
 }
 
 void drawRightLeg() {
     glPushMatrix();
-    glTranslated(robotCenter[0] + bodySize.width/4,
+    glTranslated(robotCenter[0] - bodySize.width/4,
                  robotCenter[1] - bodySize.height/2,
                  robotCenter[2]);
+
+    glutSolidSphere(jointRadius, 100, 100);
+
     rotate(rightLegAngles);
     glTranslated(0, -legSize.height/2, 0);
     box(legSize);
+
+    glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
+    glutSolidSphere(jointRadius, 100, 100);
+
+    glPushMatrix();
+    rotate(rightThighAngles);
+    glTranslated(0, -thighSize.height/2, 0);
+    box(thighSize);
+    glPopMatrix();
+
     glPopMatrix();
 }
 
 void drawBody() {
     glPushMatrix();
-    glPushMatrix();
     glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
     rotate(bodyAngles);
     box(bodySize);
-    glPopMatrix();
 
+    drawLeftArm();
+    drawRightArm();
     drawLeftLeg();
     drawRightLeg();
     glPopMatrix();
@@ -196,11 +236,9 @@ void drawBody() {
 
 void drawRobot() {
     glPushMatrix();
-    glRotated(robotAngle, 0, 1, 0);
+    rotate(robotAngles);
 
     drawHead();
-    drawLeftArm();
-    drawRightArm();
     drawBody();
 
     glPopMatrix();
@@ -231,21 +269,47 @@ void display() {
     glutSwapBuffers();
 }
 
-double oscillate(unsigned period, int lowerValue, int higherValue) {
+void reset() {
+    headAngles = {0, 0, 0};
+    bodyAngles = {0, 0, 0};
+    leftArmAngles = {0, 0, -70};
+    leftForearmAngles = {0, 0, 0};
+    rightArmAngles = {0, 0, 70};
+    rightForearmAngles = {0, 0, 0};
+    leftThighAngles = {0, 0, 0};
+    leftLegAngles = {0, 0, 0};
+    rightThighAngles = {0, 0, 0};
+    rightLegAngles = {0, 0, 0};
+}
+
+double oscillate(unsigned period, int from, int to) {
     double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
     double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
-    return coef * (higherValue - lowerValue) + lowerValue;
+    return coef * (to - from) + from;
 }
 
 // Updates all animated properties and the screen.
 void idle() {
+    globalTime++;
     if (clock() - lastUpdate >= updateInterval) {
-        lastUpdate = clock();
-        globalTime++;
-        // leftArmAngles[2] = oscillate(100, -70, 70);
-        // rightArmAngles[2] = oscillate(100, -70, 70);
-        leftLegAngles[0] = oscillate(100, -50, 50);
-        rightLegAngles[0] = oscillate(100, 50, -50);
+        unsigned period;
+        reset();
+        if (mode == Mode::JUMPING_JACKS) {
+            period = 75;
+            leftArmAngles[2] = oscillate(period, -70, 70);
+            leftForearmAngles[2] = oscillate(period, -60, 60);
+            rightArmAngles[2] = oscillate(period, 70, -70);
+            rightForearmAngles[2] = oscillate(period, 60, -60);
+
+            leftLegAngles[2] = oscillate(period, 0, 40);
+            rightLegAngles[2] = oscillate(period, 0, -40);            
+        } else if (mode == Mode::WALKING) {
+            period = 100;
+            leftLegAngles[0] = oscillate(period, -50, 50);
+            rightLegAngles[0] = oscillate(period, 50, -50);
+            leftThighAngles[0] = oscillate(period, -40, 0);
+            rightThighAngles[0] = oscillate(period, 0, -40);
+        }
         glutPostRedisplay();
     }
 }
@@ -284,18 +348,21 @@ bool is(int key, const std::string& keyName) {
 
 // Called when a normal key is pressed.
 void onKeyPress(unsigned char key, int mouseX, int mouseY) {
-    ECHO("NORMAL");
-    TRACE(key);
+    if (key == ' ') {
+        mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
+    }
 }
 
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     if (is(key, "LEFT")) {
-        robotAngle -= 5;
+        robotAngles[1] -= 5;
     } else if (is(key, "RIGHT")) {
-        robotAngle += 5;
-    } else if (is(key, "LSHIFT") || is(key, "RSHIFT")) {
-        
+        robotAngles[1] += 5;
+    } else if (is(key, "UP")) {
+        robotAngles[0] -= 5;
+    } else if (is(key, "DOWN")) {
+        robotAngles[0] += 5;
     }
 }
 
