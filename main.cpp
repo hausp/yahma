@@ -33,6 +33,7 @@ struct Material {
 struct Size {
     double width;
     double height;
+    double thickness;
 };
 
 std::ostream& operator<<(std::ostream& stream, const std::array<double, 3>& array) {
@@ -62,17 +63,22 @@ unsigned winWidth = 800;
 unsigned winHeight = 600;
 GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
-unsigned globalTime = 0;
+unsigned long long globalTime = 0;
 
-Size headSize = {0.3, 0.2};
-Size bodySize = {0.4, 0.5};
-Size armSize = {0.25, 0.05};
-Size legSize = {0.05, 0.3};
+double robotAngle = 30;
+float ambientCoefs[] = {1, 1, 1, 0.7};
+float diffuseCoefs[] = {1, 1, 1, 1};
+float specularCoefs[] = {1, 1, 1, 0.2};
+int specularExponent = 90;
+Size headSize = {0.3, 0.2, 0.2};
+Size bodySize = {0.4, 0.5, 0.2};
+Size armSize = {0.25, 0.05, 0.05};
+Size legSize = {0.05, 0.3, 0.05};
 double neckHeight = 0.05;
 Point robotCenter = {0, 0, 0};
 AngleGroup headAngles = {0, 0, 0};
-AngleGroup leftArmAngles = {0, 0, -90};
-AngleGroup rightArmAngles = {0, 0, 0};
+AngleGroup leftArmAngles = {0, 0, -80};
+AngleGroup rightArmAngles = {0, 0, 80};
 AngleGroup leftLegAngles = {0, 0, 0};
 AngleGroup rightLegAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
@@ -85,12 +91,33 @@ void rotate(const AngleGroup& angles) {
 }
 
 void box(const Size& size) {
-    glBegin(GL_QUADS);
-    glVertex3d(-size.width/2, -size.height/2, 0);
-    glVertex3d(size.width/2, -size.height/2, 0);
-    glVertex3d(size.width/2, size.height/2, 0);
-    glVertex3d(-size.width/2, size.height/2, 0);
-    glEnd();
+    glPushMatrix();
+    glScaled(size.width, size.height, size.thickness);
+    glutSolidCube(1);
+    glPopMatrix();
+    // Front
+    // glBegin(GL_POLYGON);
+    // glVertex3d(-size.width/2, -size.height/2, -size.thickness/2);
+    // glVertex3d(size.width/2, -size.height/2, -size.thickness/2);
+    // glVertex3d(size.width/2, size.height/2, -size.thickness/2);
+    // glVertex3d(-size.width/2, size.height/2, -size.thickness/2);
+    // glEnd();
+
+    // // Back
+    // glBegin(GL_POLYGON);
+    // glVertex3d(-size.width/2, -size.height/2, size.thickness/2);
+    // glVertex3d(size.width/2, -size.height/2, size.thickness/2);
+    // glVertex3d(size.width/2, size.height/2, size.thickness/2);
+    // glVertex3d(-size.width/2, size.height/2, size.thickness/2);
+    // glEnd();
+
+    // // Left
+    // glBegin(GL_POLYGON);
+    // glVertex3d(-size.width/2, -size.height/2, size.thickness/2);
+    // glVertex3d(size.width/2, -size.height/2, -size.thickness/2);
+    // glVertex3d(size.width/2, size.height/2, size.thickness/2);
+    // glVertex3d(-size.width/2, size.height/2, -size.thickness/2);
+    // glEnd();
 }
 
 void drawHead() {
@@ -105,37 +132,27 @@ void drawHead() {
 
 void drawLeftArm() {
     glPushMatrix();
-    glTranslated(robotCenter[0] - bodySize.width/2,
+    glTranslated(robotCenter[0] + bodySize.width/2,
                  robotCenter[1] + bodySize.height/4,
                  robotCenter[2]);
     rotate(leftArmAngles);
+    glTranslated(armSize.width/2, 0, 0);
 
     // static GLUquadricObj* quadric = gluNewQuadric();
     // gluCylinder(quadric, 0.025, 0.025, armSize.height, 100, 100);
-    glBegin(GL_QUADS);
-    glVertex3d(0, -armSize.height/2, 0);
-    glVertex3d(0, armSize.height/2, 0);
-    glVertex3d(-armSize.width, armSize.height/2, 0);
-    glVertex3d(-armSize.width, -armSize.height/2, 0);
-    glEnd();
+    box(armSize);
 
     glPopMatrix();
 }
 
 void drawRightArm() {
     glPushMatrix();
-    glTranslated(robotCenter[0] + bodySize.width/2,
+    glTranslated(robotCenter[0] - bodySize.width/2,
                  robotCenter[1] + bodySize.height/4,
                  robotCenter[2]);
     rotate(rightArmAngles);
-
-    glBegin(GL_QUADS);
-    glVertex3d(0, -armSize.height/2, 0);
-    glVertex3d(0, armSize.height/2, 0);
-    glVertex3d(armSize.width, armSize.height/2, 0);
-    glVertex3d(armSize.width, -armSize.height/2, 0);
-    glEnd();
-
+    glTranslated(-armSize.width/2, 0, 0);
+    box(armSize);
     glPopMatrix();
 }
 
@@ -145,14 +162,8 @@ void drawLeftLeg() {
                  robotCenter[1] - bodySize.height/2,
                  robotCenter[2]);
     rotate(leftLegAngles);
-
-    glBegin(GL_QUADS);
-    glVertex3d(-legSize.width/2, 0, 0);
-    glVertex3d(-legSize.width/2, -legSize.height, 0);
-    glVertex3d(legSize.width/2, -legSize.height, 0);
-    glVertex3d(legSize.width/2, 0, 0);
-    glEnd();
-
+    glTranslated(0, -legSize.height/2, 0);
+    box(legSize);
     glPopMatrix();
 }
 
@@ -162,14 +173,8 @@ void drawRightLeg() {
                  robotCenter[1] - bodySize.height/2,
                  robotCenter[2]);
     rotate(rightLegAngles);
-
-    glBegin(GL_QUADS);
-    glVertex3d(-legSize.width/2, 0, 0);
-    glVertex3d(-legSize.width/2, -legSize.height, 0);
-    glVertex3d(legSize.width/2, -legSize.height, 0);
-    glVertex3d(legSize.width/2, 0, 0);
-    glEnd();
-
+    glTranslated(0, -legSize.height/2, 0);
+    box(legSize);
     glPopMatrix();
 }
 
@@ -187,10 +192,15 @@ void drawBody() {
 }
 
 void drawRobot() {
+    glPushMatrix();
+    glRotated(robotAngle, 0, 1, 0);
+
     drawHead();
     drawLeftArm();
     drawRightArm();
     drawBody();
+
+    glPopMatrix();
 }
 
 // Called when the window is resized.
@@ -218,18 +228,19 @@ void display() {
     glutSwapBuffers();
 }
 
+double oscillate(unsigned period, int lowerValue, int higherValue) {
+    double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
+    double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
+    return coef * (higherValue - lowerValue) + lowerValue;
+}
+
 // Updates all animated properties and the screen.
 void idle() {
-    //headAngles[2] = (static_cast<int>(headAngles[2]) + 1) % 360;
-    // leftArmAngles[2] = (static_cast<int>(leftArmAngles[2]) + 1) % 360;
-    static int period = 100;
-    static int lower = -90;
-    static int higher = 90;
     globalTime++;
-    double frac = (static_cast<int>(globalTime) % period) / static_cast<double>(period);
-    double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
-    leftArmAngles[2] = coef * (higher - lower) + lower;
-    rightArmAngles[2] = coef * (higher - lower) + lower;
+    // leftArmAngles[2] = oscillate(100, -70, 70);
+    // rightArmAngles[2] = oscillate(100, -70, 70);
+    // leftLegAngles[0] = oscillate(100, -70, 70);
+    // rightLegAngles[0] = oscillate(100, -70, 70);
     glutPostRedisplay();
 }
 
@@ -241,12 +252,18 @@ bool init() {
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
 
-    // glEnable(GL_COLOR_MATERIAL);
-    // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
+    glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
 
-    // glEnable(GL_LIGHTING);
-    // glEnable(GL_LIGHT0);
-    // glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    //glLightfv(GL_LIGHT0, GL_AMBIENT, ambientCoefs);
+    //glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseCoefs);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
