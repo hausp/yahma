@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <fstream>
 #include <GL/glut.h>
 #include <iostream>
@@ -20,25 +21,31 @@
 
 // Types
 using Point = std::array<double, 3>;
-using Triangle = std::array<Point, 3>;
-using Texture = std::array<double, 2>;
+// using Triangle = std::array<Point, 3>;
+// using Texture = std::array<double, 2>;
+using AngleGroup = std::array<double, 3>;
 struct Material {
     double ns, ni, d;
     float ka[4], kd[4], ks[4];
     unsigned illum;
 };
 
-std::ostream& operator<<(std::ostream& stream, const Point& point) {
-    return stream << "(" << point[0] << "," << point[1] << "," << point[2] << ")";
+struct Size {
+    double width;
+    double height;
+};
+
+std::ostream& operator<<(std::ostream& stream, const std::array<double, 3>& array) {
+    return stream << "(" << array[0] << "," << array[1] << "," << array[2] << ")";
 }
 
-std::ostream& operator<<(std::ostream& stream, const Triangle& triangle) {
-    return stream << "(" << triangle[0] << "," << triangle[1] << "," << triangle[2] << ")";
-}
+// std::ostream& operator<<(std::ostream& stream, const Triangle& triangle) {
+//     return stream << "(" << triangle[0] << "," << triangle[1] << "," << triangle[2] << ")";
+// }
 
-std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
-    return stream << "(" << texture[0] << "," << texture[1] << ")";
-}
+// std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
+//     return stream << "(" << texture[0] << "," << texture[1] << ")";
+// }
 
 // Globals
 std::string title = "YAHMA";
@@ -53,199 +60,137 @@ std::unordered_map<std::string, int> keyMap = {
 };
 unsigned winWidth = 800;
 unsigned winHeight = 600;
-std::vector<Point> vertices;
-std::vector<Point> normals;
-std::vector<Triangle> faces;
-std::vector<Texture> textures;
-std::unordered_map<std::string, Material> materials;
-std::queue<std::pair<unsigned, std::string>> faceMaterials;
 GLuint texture;
 float lightPosition[] = {0, 20, 1, 1};
-int dx = 0;
-int dy = 1;
-int dz = 0;
-int angle = 0;
+unsigned globalTime = 0;
+
+Size headSize = {0.3, 0.2};
+Size bodySize = {0.4, 0.5};
+Size armSize = {0.25, 0.05};
+Size legSize = {0.05, 0.3};
+double neckHeight = 0.05;
+Point robotCenter = {0, 0, 0};
+AngleGroup headAngles = {0, 0, 0};
+AngleGroup leftArmAngles = {0, 0, -90};
+AngleGroup rightArmAngles = {0, 0, 0};
+AngleGroup leftLegAngles = {0, 0, 0};
+AngleGroup rightLegAngles = {0, 0, 0};
+AngleGroup bodyAngles = {0, 0, 0};
 // -----------------------------------------
 
-// Receives the name of a .mtl file and returns a map associating the name
-// of each material to a structure containing its properties.
-std::unordered_map<std::string, Material> parseMtl(const std::string& filename) {
-    std::unordered_map<std::string, Material> result;
-    std::string name;
-    Material material;
-    bool valid = false;
-    std::ifstream input(filename);
-    std::string line;
-    while (std::getline(input, line)) {
-        if (line.size() == 0 || line[0] == '#') {
-            continue;
-        }
-        std::istringstream stream(line);
-        std::string command;
-        stream >> command;
-        if (command == "newmtl") {
-            if (valid) {
-                result.insert(std::make_pair(name, material));
-                material = Material();
-            }
-            stream >> name;
-            valid = true;
-        } else if (command == "Ns") {
-            stream >> material.ns;
-        } else if (command == "Ka") {
-            stream >> material.ka[0];
-            stream >> material.ka[1];
-            stream >> material.ka[2];
-            material.ka[3] = 1;
-        } else if (command == "Kd") {
-            stream >> material.kd[0];
-            stream >> material.kd[1];
-            stream >> material.kd[2];
-            material.kd[3] = 1;
-        } else if (command == "Ks") {
-            stream >> material.ks[0];
-            stream >> material.ks[1];
-            stream >> material.ks[2];
-            material.ks[3] = 1;
-        } else if (command == "Ni") {
-            stream >> material.ni;
-        } else if (command == "d") {
-            stream >> material.d;
-        } else if (command == "illum") {
-            stream >> material.illum;
-        }
-    }
-
-    if (valid) {
-        result.insert(std::make_pair(name, material));
-    }
-
-    return result;
+void rotate(const AngleGroup& angles) {
+    glRotated(angles[0], 1, 0, 0);
+    glRotated(angles[1], 0, 1, 0);
+    glRotated(angles[2], 0, 0, 1);
 }
 
-// Receives the name of a .obj file and resets all data structures to match it.
-void loadObj(const std::string& filename) {
-    vertices.clear();
-    normals.clear();
-    faces.clear();
-    textures.clear();
-    materials.clear();
-    while (!faceMaterials.empty()) {
-        faceMaterials.pop();    
-    }
-    vertices.push_back(Point());
-    normals.push_back(Point());
-    faces.push_back(Triangle());
-    textures.push_back(Texture());
-
-    std::ifstream input(filename);
-    std::string line;
-    while (std::getline(input, line)) {
-        if (line.size() == 0 || line[0] == '#') {
-            continue;
-        }
-        std::istringstream stream(line);
-        std::string command;
-        stream >> command;
-        if (command == "v") {
-            Point vertex;
-            stream >> vertex[0];
-            stream >> vertex[1];
-            stream >> vertex[2];
-            vertices.push_back(vertex);
-        } else if (command == "vn") {
-            Point vertex;
-            stream >> vertex[0];
-            stream >> vertex[1];
-            stream >> vertex[2];
-            normals.push_back(vertex);
-        } else if (command == "vt") {
-            Texture newTexture;
-            stream >> newTexture[0];
-            stream >> newTexture[1];
-            textures.push_back(newTexture);
-        } else if (command == "f") {
-            Triangle face;
-            for (unsigned i = 0; i < 3; i++) {
-                for (unsigned j = 0; j < 3; j++) {
-                    face[i][j] = 0;
-                }
-            }
-            for (unsigned i = 0; i < 3; i++) {
-                std::string triple;
-                stream >> triple;
-                std::istringstream iss(triple);
-                std::string container;
-                unsigned j = 0;
-                while (std::getline(iss, container, '/')) {
-                    face[j][i] = stoi(container);
-                    j++;
-                }
-            }
-            faces.push_back(face);
-        } else if (command == "mtllib") {
-            std::string filename;
-            stream >> filename;
-            materials = parseMtl(filename);
-        } else if (command == "usemtl") {
-            std::string name;
-            stream >> name;
-            faceMaterials.push(std::make_pair(faces.size(), name));
-        }
-    }
+void box(const Size& size) {
+    glBegin(GL_QUADS);
+    glVertex3d(-size.width/2, -size.height/2, 0);
+    glVertex3d(size.width/2, -size.height/2, 0);
+    glVertex3d(size.width/2, size.height/2, 0);
+    glVertex3d(-size.width/2, size.height/2, 0);
+    glEnd();
 }
 
-// Draws the main character of this simulation.
-void drawCharacter() {
+void drawHead() {
     glPushMatrix();
-    // Subzero
-    glRotated(angle, dx, dy, dz);
-    glTranslated(0, 0.3, 0);
-    glScaled(0.3, 0.3, 0.3);
-    // Dinomech
-    // glRotated(90, 0, 1, 0);
-    // glTranslated(0, -0.9, 0);
-    // glScaled(0.04, 0.04, 0.04);
-
-    bool hasTextures = (textures.size() > 0);
-    bool hasNormals = (normals.size() > 0);
-    Material material;
-    bool validMaterial = false;
-    unsigned faceNumber = 0;
-    auto queueCopy = faceMaterials;
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    for (auto face : faces) {
-        if (faceMaterials.size() > 0 && faceNumber == faceMaterials.front().first) {
-            material = materials[faceMaterials.front().second];
-            faceMaterials.pop();
-            validMaterial = true;
-        }
-
-        if (validMaterial) {
-            glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ka);
-            glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.kd);
-            glMaterialfv(GL_FRONT, GL_SPECULAR, material.ks);
-            glMateriali(GL_FRONT, GL_SHININESS, material.ns / 1000.0 * 128);
-        }
-        glBegin(GL_TRIANGLES);
-        for (unsigned i = 0; i < 3; i++) {
-            auto vertex = vertices[face[0][i]];
-            glVertex3d(vertex[0], vertex[1], vertex[2]);
-            if (hasTextures) {
-                auto currTexture = textures[face[1][i]];
-                glTexCoord2d(currTexture[0], currTexture[1]);                
-            }
-            if (hasNormals) {
-                auto normal = normals[face[2][i]];
-                glNormal3d(normal[0], normal[1], normal[2]);                
-            }
-        }
-        glEnd();
-        faceNumber++;
-    }
+    glTranslated(robotCenter[0],
+                 robotCenter[1] + bodySize.height/2 + headSize.height/2 + neckHeight,
+                 robotCenter[2]);
+    rotate(headAngles);
+    box(headSize);
     glPopMatrix();
-    faceMaterials = queueCopy;
+}
+
+void drawLeftArm() {
+    glPushMatrix();
+    glTranslated(robotCenter[0] - bodySize.width/2,
+                 robotCenter[1] + bodySize.height/4,
+                 robotCenter[2]);
+    rotate(leftArmAngles);
+
+    // static GLUquadricObj* quadric = gluNewQuadric();
+    // gluCylinder(quadric, 0.025, 0.025, armSize.height, 100, 100);
+    glBegin(GL_QUADS);
+    glVertex3d(0, -armSize.height/2, 0);
+    glVertex3d(0, armSize.height/2, 0);
+    glVertex3d(-armSize.width, armSize.height/2, 0);
+    glVertex3d(-armSize.width, -armSize.height/2, 0);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawRightArm() {
+    glPushMatrix();
+    glTranslated(robotCenter[0] + bodySize.width/2,
+                 robotCenter[1] + bodySize.height/4,
+                 robotCenter[2]);
+    rotate(rightArmAngles);
+
+    glBegin(GL_QUADS);
+    glVertex3d(0, -armSize.height/2, 0);
+    glVertex3d(0, armSize.height/2, 0);
+    glVertex3d(armSize.width, armSize.height/2, 0);
+    glVertex3d(armSize.width, -armSize.height/2, 0);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawLeftLeg() {
+    glPushMatrix();
+    glTranslated(robotCenter[0] - bodySize.width/4,
+                 robotCenter[1] - bodySize.height/2,
+                 robotCenter[2]);
+    rotate(leftLegAngles);
+
+    glBegin(GL_QUADS);
+    glVertex3d(-legSize.width/2, 0, 0);
+    glVertex3d(-legSize.width/2, -legSize.height, 0);
+    glVertex3d(legSize.width/2, -legSize.height, 0);
+    glVertex3d(legSize.width/2, 0, 0);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawRightLeg() {
+    glPushMatrix();
+    glTranslated(robotCenter[0] + bodySize.width/4,
+                 robotCenter[1] - bodySize.height/2,
+                 robotCenter[2]);
+    rotate(rightLegAngles);
+
+    glBegin(GL_QUADS);
+    glVertex3d(-legSize.width/2, 0, 0);
+    glVertex3d(-legSize.width/2, -legSize.height, 0);
+    glVertex3d(legSize.width/2, -legSize.height, 0);
+    glVertex3d(legSize.width/2, 0, 0);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawBody() {
+    glPushMatrix();
+    glPushMatrix();
+    glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
+    rotate(bodyAngles);
+    box(bodySize);
+    glPopMatrix();
+
+    drawLeftLeg();
+    drawRightLeg();
+    glPopMatrix();
+}
+
+void drawRobot() {
+    drawHead();
+    drawLeftArm();
+    drawRightArm();
+    drawBody();
 }
 
 // Called when the window is resized.
@@ -267,14 +212,24 @@ void display() {
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glLoadIdentity();
 
-    drawCharacter();
+    //drawCharacter();
+    drawRobot();
 
     glutSwapBuffers();
 }
 
 // Updates all animated properties and the screen.
 void idle() {
-    angle = (angle + 1) % 360;
+    //headAngles[2] = (static_cast<int>(headAngles[2]) + 1) % 360;
+    // leftArmAngles[2] = (static_cast<int>(leftArmAngles[2]) + 1) % 360;
+    static int period = 100;
+    static int lower = -90;
+    static int higher = 90;
+    globalTime++;
+    double frac = (static_cast<int>(globalTime) % period) / static_cast<double>(period);
+    double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
+    leftArmAngles[2] = coef * (higher - lower) + lower;
+    rightArmAngles[2] = coef * (higher - lower) + lower;
     glutPostRedisplay();
 }
 
@@ -286,16 +241,16 @@ bool init() {
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
 
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    // glEnable(GL_COLOR_MATERIAL);
+    // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+    // glEnable(GL_LIGHTING);
+    // glEnable(GL_LIGHT0);
+    // glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    loadObj(model);
+    // loadObj(model);
     return true;
 }
 
@@ -312,19 +267,7 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
 
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
-    if (is(key, "LEFT") || is(key, "RIGHT")) {
-        dx = 0;
-        dy = 1;
-        dz = 0;
-    } else if (is(key, "UP") || is(key, "DOWN")) {
-        dx = 0;
-        dy = 0;
-        dz = 1;
-    } else if (is(key, "LSHIFT") || is(key, "RSHIFT")) {
-        dx = 1;
-        dy = 0;
-        dz = 0;
-    }
+
 }
 
 int main(int argc, char** argv) {
