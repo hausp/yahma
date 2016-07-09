@@ -239,8 +239,8 @@ void idle() {
     globalTime++;
     // leftArmAngles[2] = oscillate(100, -70, 70);
     // rightArmAngles[2] = oscillate(100, -70, 70);
-    // leftLegAngles[0] = oscillate(100, -70, 70);
-    // rightLegAngles[0] = oscillate(100, -70, 70);
+    leftLegAngles[0] = oscillate(100, -50, 50);
+    rightLegAngles[0] = oscillate(100, 50, -50);
     glutPostRedisplay();
 }
 
@@ -284,7 +284,13 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
 
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
-
+    if (is(key, "LEFT")) {
+        robotAngle -= 5;
+    } else if (is(key, "RIGHT")) {
+        robotAngle += 5;
+    } else if (is(key, "LSHIFT") || is(key, "RSHIFT")) {
+        
+    }
 }
 
 int main(int argc, char** argv) {
