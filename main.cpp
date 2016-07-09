@@ -53,6 +53,10 @@ std::ostream& operator<<(std::ostream& stream, const std::array<double, 3>& arra
 std::string title = "YAHMA";
 std::string model = "subzero.obj";
 std::unordered_map<std::string, int> keyMap = {
+    {"F1", 1},
+    {"F2", 2},
+    {"F3", 3},
+    {"F4", 4},
     {"LEFT", 100},
     {"UP", 101},
     {"RIGHT", 102},
@@ -63,11 +67,11 @@ std::unordered_map<std::string, int> keyMap = {
 unsigned winWidth = 800;
 unsigned winHeight = 600;
 GLuint texture;
-float lightPosition[] = {0, 20, 1, 1};
 unsigned long long globalTime = 0;
 clock_t lastUpdate = 0;
 clock_t updateInterval = 0.005 * CLOCKS_PER_SEC;
 
+float lightPosition[] = {0, 20, 1, 1};
 float ambientCoefs[] = {1, 1, 1, 0.7};
 float diffuseCoefs[] = {1, 1, 1, 1};
 float specularCoefs[] = {1, 1, 1, 0.2};
@@ -77,17 +81,24 @@ enum class Mode {
     WALKING,
     JUMPING_JACKS
 };
-auto mode = Mode::WALKING;
+auto mode = Mode::JUMPING_JACKS;
 
+const double scaleSpeed = 0.1;
+const double rotationSpeed = 5;
+const double moveSpeed = 0.01;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
+double scale = 1;
+
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
 Size armSize = {0.125, 0.05, 0.05};
 Size forearmSize = {0.125, 0.05, 0.05};
 Size legSize = {0.05, 0.15, 0.05};
 Size thighSize = {0.05, 0.25, 0.05};
+
+Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
 AngleGroup robotAngles = {0, 30, 0};
 AngleGroup headAngles = {0, 0, 0};
@@ -127,9 +138,9 @@ void drawHead() {
 
 void drawLeftArm() {
     glPushMatrix();
-    glTranslated(robotCenter[0] + bodySize.width/2,
-                 robotCenter[1] + bodySize.height * shoulderOffset,
-                 robotCenter[2]);
+    glTranslated(bodySize.width/2,
+                 bodySize.height * shoulderOffset,
+                 0);
 
     glutSolidSphere(jointRadius, 100, 100);
 
@@ -151,9 +162,9 @@ void drawLeftArm() {
 
 void drawRightArm() {
     glPushMatrix();
-    glTranslated(robotCenter[0] - bodySize.width/2,
-                 robotCenter[1] + bodySize.height * shoulderOffset,
-                 robotCenter[2]);
+    glTranslated(-bodySize.width/2,
+                 bodySize.height * shoulderOffset,
+                 0);
 
     glutSolidSphere(jointRadius, 100, 100);
 
@@ -175,9 +186,9 @@ void drawRightArm() {
 
 void drawLeftLeg() {
     glPushMatrix();
-    glTranslated(robotCenter[0] + bodySize.width/4,
-                 robotCenter[1] - bodySize.height/2,
-                 robotCenter[2]);
+    glTranslated(bodySize.width/4,
+                 -bodySize.height/2,
+                 0);
 
     glutSolidSphere(jointRadius, 100, 100);
 
@@ -199,9 +210,9 @@ void drawLeftLeg() {
 
 void drawRightLeg() {
     glPushMatrix();
-    glTranslated(robotCenter[0] - bodySize.width/4,
-                 robotCenter[1] - bodySize.height/2,
-                 robotCenter[2]);
+    glTranslated(-bodySize.width/4,
+                 -bodySize.height/2,
+                 0);
 
     glutSolidSphere(jointRadius, 100, 100);
 
@@ -237,6 +248,7 @@ void drawBody() {
 void drawRobot() {
     glPushMatrix();
     rotate(robotAngles);
+    glScaled(scale, scale, scale);
 
     drawHead();
     drawBody();
@@ -310,6 +322,9 @@ void idle() {
             rightLegAngles[0] = oscillate(period, 50, -50);
             leftThighAngles[0] = oscillate(period, -40, 0);
             rightThighAngles[0] = oscillate(period, 0, -40);
+            robotCenter[0] += velocity[0];
+            robotCenter[1] += velocity[1];
+            robotCenter[2] += velocity[2];
         }
         glutPostRedisplay();
     }
@@ -347,23 +362,50 @@ bool is(int key, const std::string& keyName) {
     return key == keyMap[keyName];
 }
 
+Point polarToCartesian(double distance, double angle) {
+    double a = angle * M_PI / 180;
+    double s = sin(a);
+    double c = cos(a);
+    return {distance * c, 0, distance * s};
+}
+
 // Called when a normal key is pressed.
 void onKeyPress(unsigned char key, int mouseX, int mouseY) {
-    if (key == ' ') {
-        mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
+    switch (key) {
+        case ' ':
+            mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
+            break;
+        case 'a':
+            robotAngles[1] -= rotationSpeed;
+            break;
+        case 'd':
+            robotAngles[1] += rotationSpeed;
+            break;
+        case 'w':
+            velocity = polarToCartesian(moveSpeed, robotAngles[1]);
+            break;
+        case 's':
+            velocity = polarToCartesian(-moveSpeed, robotAngles[1]);
+            break;
     }
 }
 
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
-    if (is(key, "LEFT")) {
-        robotAngles[1] -= 5;
-    } else if (is(key, "RIGHT")) {
-        robotAngles[1] += 5;
-    } else if (is(key, "UP")) {
-        robotAngles[0] -= 5;
-    } else if (is(key, "DOWN")) {
-        robotAngles[0] += 5;
+    // if (is(key, "LEFT")) {
+    //     robotAngles[1] -= rotationSpeed;
+    // } else if (is(key, "RIGHT")) {
+    //     robotAngles[1] += rotationSpeed;
+    // } else if (is(key, "UP")) {
+    //     robotAngles[0] -= rotationSpeed;
+    // } else if (is(key, "DOWN")) {
+    //     robotAngles[0] += rotationSpeed;
+    /*} else*/ if (is(key, "F1")) {
+        scale += scaleSpeed;
+    } else if (is(key, "F2")) {
+        scale -= scaleSpeed;
+    } else if (is(key, "F3")) {
+        ECHO("FULLSCREEN");
     }
 }
 
