@@ -89,9 +89,14 @@ double shoulderOffset = 0.35;
 
 // Camera related stuff
 double zoom = 1;
-const double zoomSpeed = 0.1;
-const double zNear = 0.5;
-const double zFar = 5;
+const double zoomSpeed = 0.1, zNear = 1, zFar = 5;
+Point camera = {1, 1, -2}, lookAt = {0, 0, 0};
+
+// Nice moving around related stuff
+double moveRadius = 3;
+double theta = 0, phi = 0;
+int oldX, oldY;
+bool rotating = false;
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -102,8 +107,6 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
-Point camera = {1, 1, -1};
-Point lookAt = {0, 0, 0};
 AngleGroup robotAngles = {0, 30, 0};
 AngleGroup headAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
@@ -274,7 +277,7 @@ void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(camera[0], camera[1], camera[2], // camera position
-              lookAt[0], lookAt[1], lookAt[2], // look at point
+              robotCenter[0], robotCenter[1], robotCenter[2], // look at point
               0, 1, 0); // up-vector
 }
 
@@ -435,15 +438,25 @@ void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
 
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
-    // if (is(key, "LEFT")) {
-    //     robotAngles[1] -= rotationSpeed;
-    // } else if (is(key, "RIGHT")) {
-    //     robotAngles[1] += rotationSpeed;
-    // } else if (is(key, "UP")) {
-    //     robotAngles[0] -= rotationSpeed;
-    // } else if (is(key, "DOWN")) {
-    //     robotAngles[0] += rotationSpeed;
-    /*} else*/ if (is(key, "F1")) {
+    if (is(key, "LEFT")) {
+        camera[0] -= 0.1;
+        if (camera[0] < 0) {
+            camera[2] += 0.1;
+        } else {
+            camera[2] -= 0.1;
+        }
+    } else if (is(key, "RIGHT")) {
+        camera[0] += 0.1;
+        if (camera[0] > 0) {
+            camera[2] += 0.1;
+        } else {
+            camera[2] -= 0.1;
+        }
+    } else if (is(key, "UP")) {
+        camera[1] += 0.1;
+    } else if (is(key, "DOWN")) {
+        camera[1] -= 0.1;
+    } else if (is(key, "F1")) {
         zoom += zoomSpeed;
         updateProjectionMatrix();
     } else if (is(key, "F2")) {
@@ -451,6 +464,33 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
         updateProjectionMatrix();
     } else if (is(key, "F3")) {
         ECHO("FULLSCREEN");
+    }
+}
+
+void onMouseMove(int x, int y) {
+    if (rotating) {
+        theta += (x - oldX) * 0.01;
+        phi += (y - oldY) * 0.01;
+        camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
+        camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
+        camera[2] = robotCenter[2] + moveRadius * cos(theta);
+
+        setupModelViewMatrix();
+
+        oldX = x;
+        oldY = y;
+    }
+}
+
+void onMousePress(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            rotating = true;
+            oldX = x;
+            oldY = y;
+        } else {
+            rotating = false;
+        }
     }
 }
 
@@ -465,6 +505,8 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(onKeyPress);
     glutSpecialFunc(onSpecialKeyPress);
     glutKeyboardUpFunc(onKeyRelease);
+    glutMouseFunc(onMousePress);
+    glutMotionFunc(onMouseMove);
     glutIdleFunc(idle);
     init();
     glutMainLoop();
