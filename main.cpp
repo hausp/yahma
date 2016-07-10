@@ -137,9 +137,9 @@ void box(const Size& size) {
 
 void drawHead() {
     glPushMatrix();
-    glTranslated(robotCenter[0],
-                 robotCenter[1] + bodySize.height/2 + headSize.height/2 + neckHeight,
-                 robotCenter[2]);
+    glTranslated(0,
+                 0 + bodySize.height/2 + headSize.height/2 + neckHeight,
+                 0);
     rotate(headAngles);
     box(headSize);
     glPopMatrix();
@@ -243,8 +243,6 @@ void drawRightLeg() {
 
 void drawBody() {
     glPushMatrix();
-    glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
-    rotate(bodyAngles);
     box(bodySize);
 
     drawLeftArm();
@@ -257,6 +255,7 @@ void drawBody() {
 void drawRobot() {
     glPushMatrix();
     rotate(robotAngles);
+    glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
 
     drawHead();
     drawBody();
@@ -277,7 +276,7 @@ void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(camera[0], camera[1], camera[2], // camera position
-              robotCenter[0], robotCenter[1], robotCenter[2], // look at point
+              lookAt[0], lookAt[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
 }
 
@@ -300,7 +299,7 @@ void display() {
     setupModelViewMatrix();
 
     drawRobot();
-
+    ECHO(robotCenter);
     glutSwapBuffers();
 }
 
@@ -468,18 +467,18 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
 }
 
 void onMouseMove(int x, int y) {
-    if (rotating) {
-        theta += (x - oldX) * 0.01;
-        phi += (y - oldY) * 0.01;
-        camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
-        camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
-        camera[2] = robotCenter[2] + moveRadius * cos(theta);
+    // if (rotating) {
+    //     theta += (x - oldX) * 0.01;
+    //     phi += (y - oldY) * 0.01;
+    //     camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
+    //     camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
+    //     camera[2] = robotCenter[2] + moveRadius * cos(theta);
 
-        setupModelViewMatrix();
+    //     setupModelViewMatrix();
 
-        oldX = x;
-        oldY = y;
-    }
+    //     oldX = x;
+    //     oldY = y;
+    // }
 }
 
 void onMousePress(int button, int state, int x, int y) {
