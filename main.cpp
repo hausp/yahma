@@ -254,8 +254,8 @@ void drawBody() {
 
 void drawRobot() {
     glPushMatrix();
-    rotate(robotAngles);
     glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
+    glRotated(robotAngles[1], 0, 1, 0);
 
     drawHead();
     drawBody();
@@ -287,8 +287,8 @@ void reshape(int newWidth, int newHeight) {
 
     glViewport(0, 0, winWidth, winHeight);
 
-    updateProjectionMatrix();
     setupModelViewMatrix();
+    updateProjectionMatrix();
 }
 
 // Clears and displays the screen.
