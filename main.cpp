@@ -266,7 +266,7 @@ void updateProjectionMatrix() {
     gluPerspective (50.0*zoom, (float)winWidth/(float)winHeight, 0.1, 10);
 }
 
-void updateModelViewMatrix() {
+void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
     
     glLoadIdentity();
@@ -284,7 +284,7 @@ void reshape(int newWidth, int newHeight) {
     glViewport(0, 0, winWidth, winHeight);
 
     updateProjectionMatrix();
-    updateModelViewMatrix();
+    setupModelViewMatrix();
 }
 
 // Clears and displays the screen.
@@ -292,13 +292,7 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-    glMatrixMode(GL_MODELVIEW);
-    
-    glLoadIdentity();
-    
-    gluLookAt(camera[0], camera[1], camera[2], // camera position
-              lookAt[0], lookAt[1], lookAt[2], // look at point
-              0, 1, 0); // up-vector
+    setupModelViewMatrix();
 
     //drawCharacter();
     drawRobot();
