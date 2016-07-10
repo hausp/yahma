@@ -90,6 +90,8 @@ double shoulderOffset = 0.35;
 // Camera related stuff
 double zoom = 1;
 const double zoomSpeed = 0.1;
+const double zNear = 0.5;
+const double zFar = 5;
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -262,9 +264,10 @@ void drawRobot() {
 void updateProjectionMatrix() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(50.0 * zoom,
-                   (float)winWidth / (float)winHeight,
-                   camera[2] + 2, 10); // zNear, zFar
+    gluPerspective(50.0 * zoom, // field of view angle in y (degrees)
+                   (float)winWidth / (float)winHeight, // aspect ratio
+                   zNear, // zNear
+                   zFar); // zFar
 }
 
 void setupModelViewMatrix() {
