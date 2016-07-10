@@ -68,8 +68,6 @@ unsigned winWidth = 800;
 unsigned winHeight = 600;
 GLuint texture;
 unsigned long long globalTime = 0;
-clock_t lastUpdate = 0;
-clock_t updateInterval = 0.005 * CLOCKS_PER_SEC;
 
 float lightPosition[] = {0, 20, 1, 1};
 float ambientCoefs[] = {1, 1, 1, 0.7};
@@ -302,37 +300,34 @@ double oscillate(unsigned period, int from, int to) {
 
 // Updates all animated properties and the screen.
 void idle() {
-    if (clock() - lastUpdate >= updateInterval) {
-        lastUpdate = clock();
-        globalTime++;
-        unsigned period;
-        reset();
-        if (mode == Mode::JUMPING_JACKS) {
-            period = 75;
-            leftArmAngles[2] = oscillate(period, -70, 70);
-            leftForearmAngles[2] = oscillate(period, -60, 60);
-            rightArmAngles[2] = oscillate(period, 70, -70);
-            rightForearmAngles[2] = oscillate(period, 60, -60);
+    globalTime = clock();
+    unsigned period;
+    reset();
+    if (mode == Mode::JUMPING_JACKS) {
+        period = 0.8 * CLOCKS_PER_SEC;
+        leftArmAngles[2] = oscillate(period, -70, 70);
+        leftForearmAngles[2] = oscillate(period, -60, 60);
+        rightArmAngles[2] = oscillate(period, 70, -70);
+        rightForearmAngles[2] = oscillate(period, 60, -60);
 
-            leftLegAngles[2] = oscillate(period, 0, 40);
-            rightLegAngles[2] = oscillate(period, 0, -40);            
-        } else if (mode == Mode::WALKING) {
-            period = 80;
-            headAngles[1] = oscillate(period, -5, 5);
-            bodyAngles[1] = oscillate(period, -10, 10);
-            leftArmAngles[0] = oscillate(period, 25, -25);
-            rightArmAngles[0] = oscillate(period, -25, 25);
+        leftLegAngles[2] = oscillate(period, 0, 40);
+        rightLegAngles[2] = oscillate(period, 0, -40);            
+    } else if (mode == Mode::WALKING) {
+        period = 1 * CLOCKS_PER_SEC;
+        headAngles[1] = oscillate(period, -5, 5);
+        bodyAngles[1] = oscillate(period, -10, 10);
+        leftArmAngles[0] = oscillate(period, 25, -25);
+        rightArmAngles[0] = oscillate(period, -25, 25);
 
-            leftLegAngles[0] = oscillate(period, -50, 50);
-            rightLegAngles[0] = oscillate(period, 50, -50);
-            leftThighAngles[0] = oscillate(period, -40, 0);
-            rightThighAngles[0] = oscillate(period, 0, -40);
-            robotCenter[0] += velocity[0];
-            robotCenter[1] += velocity[1];
-            robotCenter[2] += velocity[2];
-        }
-        glutPostRedisplay();
+        leftLegAngles[0] = oscillate(period, -50, 50);
+        rightLegAngles[0] = oscillate(period, 50, -50);
+        leftThighAngles[0] = oscillate(period, -40, 0);
+        rightThighAngles[0] = oscillate(period, 0, -40);
+        robotCenter[0] += velocity[0];
+        robotCenter[1] += velocity[1];
+        robotCenter[2] += velocity[2];
     }
+    glutPostRedisplay();
 }
 
 // Initializes all important structures.
