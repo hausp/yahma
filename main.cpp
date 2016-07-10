@@ -317,7 +317,12 @@ void idle() {
             leftLegAngles[2] = oscillate(period, 0, 40);
             rightLegAngles[2] = oscillate(period, 0, -40);            
         } else if (mode == Mode::WALKING) {
-            period = 100;
+            period = 80;
+            headAngles[1] = oscillate(period, -5, 5);
+            bodyAngles[1] = oscillate(period, -10, 10);
+            leftArmAngles[0] = oscillate(period, 25, -25);
+            rightArmAngles[0] = oscillate(period, -25, 25);
+
             leftLegAngles[0] = oscillate(period, -50, 50);
             rightLegAngles[0] = oscillate(period, 50, -50);
             leftThighAngles[0] = oscillate(period, -40, 0);
