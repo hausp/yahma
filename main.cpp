@@ -276,7 +276,7 @@ void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(camera[0], camera[1], camera[2], // camera position
-              lookAt[0], lookAt[1], lookAt[2], // look at point
+              robotCenter[0], robotCenter[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
 }
 
@@ -299,7 +299,6 @@ void display() {
     setupModelViewMatrix();
 
     drawRobot();
-    ECHO(robotCenter);
     glutSwapBuffers();
 }
 
@@ -467,18 +466,18 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
 }
 
 void onMouseMove(int x, int y) {
-    // if (rotating) {
-    //     theta += (x - oldX) * 0.01;
-    //     phi += (y - oldY) * 0.01;
-    //     camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
-    //     camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
-    //     camera[2] = robotCenter[2] + moveRadius * cos(theta);
+    if (rotating) {
+        theta -= (x - oldX) * 0.01;
+        phi += (y - oldY) * 0.01;
+        camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
+        camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
+        camera[2] = robotCenter[2] + moveRadius * cos(theta);
 
-    //     setupModelViewMatrix();
+        setupModelViewMatrix();
 
-    //     oldX = x;
-    //     oldY = y;
-    // }
+        oldX = x;
+        oldY = y;
+    }
 }
 
 void onMousePress(int button, int state, int x, int y) {
