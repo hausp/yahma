@@ -83,7 +83,7 @@ auto mode = Mode::JUMPING_JACKS;
 
 const double scaleSpeed = 0.1;
 const double rotationSpeed = 5;
-const double moveSpeed = 0.01;
+const double moveSpeed = 0.001;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
@@ -109,6 +109,8 @@ AngleGroup leftThighAngles = {0, 0, 0};
 AngleGroup leftLegAngles = {0, 0, 0};
 AngleGroup rightThighAngles = {0, 0, 0};
 AngleGroup rightLegAngles = {0, 0, 0};
+
+bool move;
 // -----------------------------------------
 
 void rotate(const AngleGroup& angles) {
@@ -313,19 +315,22 @@ void idle() {
         leftLegAngles[2] = oscillate(period, 0, 40);
         rightLegAngles[2] = oscillate(period, 0, -40);            
     } else if (mode == Mode::WALKING) {
-        period = 1 * CLOCKS_PER_SEC;
-        headAngles[1] = oscillate(period, -5, 5);
-        bodyAngles[1] = oscillate(period, -10, 10);
-        leftArmAngles[0] = oscillate(period, 25, -25);
-        rightArmAngles[0] = oscillate(period, -25, 25);
+        if (move) {
+            period = 1 * CLOCKS_PER_SEC;
+            headAngles[1] = oscillate(period, -5, 5);
+            bodyAngles[1] = oscillate(period, -10, 10);
+            leftArmAngles[0] = oscillate(period, 25, -25);
+            rightArmAngles[0] = oscillate(period, -25, 25);
 
-        leftLegAngles[0] = oscillate(period, -50, 50);
-        rightLegAngles[0] = oscillate(period, 50, -50);
-        leftThighAngles[0] = oscillate(period, -40, 0);
-        rightThighAngles[0] = oscillate(period, 0, -40);
-        robotCenter[0] += velocity[0];
-        robotCenter[1] += velocity[1];
-        robotCenter[2] += velocity[2];
+            leftLegAngles[0] = oscillate(period, -50, 50);
+            rightLegAngles[0] = oscillate(period, 50, -50);
+            leftThighAngles[0] = oscillate(period, -40, 0);
+            rightThighAngles[0] = oscillate(period, 0, -40);
+        
+            robotCenter[0] += velocity[0];
+            robotCenter[1] += velocity[1];
+            robotCenter[2] += velocity[2];
+        }
     }
     glutPostRedisplay();
 }
@@ -383,9 +388,22 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
             break;
         case 'w':
             velocity = polarToCartesian(moveSpeed, robotAngles[1]);
+            move = true;
             break;
         case 's':
             velocity = polarToCartesian(-moveSpeed, robotAngles[1]);
+            move = true;
+            break;
+    }
+}
+
+void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
+    switch (key) {
+        case 'w':
+            move = false;
+            break;
+        case 's':
+            move = false;
             break;
     }
 }
@@ -419,6 +437,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
     glutKeyboardFunc(onKeyPress);
     glutSpecialFunc(onSpecialKeyPress);
+    glutKeyboardUpFunc(onKeyRelease);
     glutIdleFunc(idle);
     init();
     glutMainLoop();
