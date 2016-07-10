@@ -81,13 +81,14 @@ enum class Mode {
 };
 auto mode = Mode::JUMPING_JACKS;
 
-const double scaleSpeed = 0.1;
+const double zoomSpeed = 0.1;
 const double rotationSpeed = 5;
 const double moveSpeed = 0.001;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
-double scale = 1;
+
+double zoom = 1;
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -98,6 +99,8 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
+Point camera = {1, 1, -1};
+Point lookAt = {0, 0, 0};
 AngleGroup robotAngles = {0, 30, 0};
 AngleGroup headAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
@@ -248,12 +251,19 @@ void drawBody() {
 void drawRobot() {
     glPushMatrix();
     rotate(robotAngles);
-    glScaled(scale, scale, scale);
 
     drawHead();
     drawBody();
 
     glPopMatrix();
+}
+
+void updateZoom() {
+    glMatrixMode(GL_PROJECTION);
+    
+    glLoadIdentity();
+    
+    gluPerspective (50.0*zoom, (float)winWidth/(float)winHeight, 0.1, 10);
 }
 
 // Called when the window is resized.
@@ -262,18 +272,30 @@ void reshape(int newWidth, int newHeight) {
     winHeight = newHeight;
 
     glViewport(0, 0, winWidth, winHeight);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+
+    updateZoom();
 
     glMatrixMode(GL_MODELVIEW);
+    
     glLoadIdentity();
+
+    gluLookAt(camera[0], camera[1], camera[2], // camera position
+              lookAt[0], lookAt[1], lookAt[2], // look at point
+              0, 1, 0); // up-vector
 }
 
 // Clears and displays the screen.
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+
+    glMatrixMode(GL_MODELVIEW);
+    
     glLoadIdentity();
+    
+    gluLookAt(camera[0], camera[1], camera[2], // camera position
+              lookAt[0], lookAt[1], lookAt[2], // look at point
+              0, 1, 0); // up-vector
 
     //drawCharacter();
     drawRobot();
@@ -358,6 +380,7 @@ bool init() {
 
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
     // loadObj(model);
     return true;
 }
@@ -368,9 +391,13 @@ bool is(int key, const std::string& keyName) {
 }
 
 Point polarToCartesian(double distance, double angle) {
+    TRACE(angle);
     double a = angle * M_PI / 180;
-    double s = sin(a);
-    double c = cos(a);
+    TRACE(a);
+    double s = abs(sin(a));
+    double c = abs(cos(a));
+    TRACE(s);
+    TRACE(c);
     return {distance * c, 0, distance * s};
 }
 
@@ -419,9 +446,11 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     // } else if (is(key, "DOWN")) {
     //     robotAngles[0] += rotationSpeed;
     /*} else*/ if (is(key, "F1")) {
-        scale += scaleSpeed;
+        zoom += zoomSpeed;
+        updateZoom();
     } else if (is(key, "F2")) {
-        scale -= scaleSpeed;
+        zoom -= zoomSpeed;
+        updateZoom();
     } else if (is(key, "F3")) {
         ECHO("FULLSCREEN");
     }
