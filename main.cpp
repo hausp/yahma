@@ -81,14 +81,15 @@ enum class Mode {
 };
 auto mode = Mode::JUMPING_JACKS;
 
-const double zoomSpeed = 0.1;
 const double rotationSpeed = 5;
 const double moveSpeed = 0.001;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
 
+// Camera related stuff
 double zoom = 1;
+const double zoomSpeed = 0.1;
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -260,17 +261,15 @@ void drawRobot() {
 
 void updateProjectionMatrix() {
     glMatrixMode(GL_PROJECTION);
-    
     glLoadIdentity();
-    
-    gluPerspective (50.0*zoom, (float)winWidth/(float)winHeight, 0.1, 10);
+    gluPerspective(50.0 * zoom,
+                   (float)winWidth / (float)winHeight,
+                   camera[2] + 2, 10); // zNear, zFar
 }
 
 void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
-    
     glLoadIdentity();
-
     gluLookAt(camera[0], camera[1], camera[2], // camera position
               lookAt[0], lookAt[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
@@ -294,7 +293,6 @@ void display() {
 
     setupModelViewMatrix();
 
-    //drawCharacter();
     drawRobot();
 
     glutSwapBuffers();
