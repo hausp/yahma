@@ -258,12 +258,22 @@ void drawRobot() {
     glPopMatrix();
 }
 
-void updateZoom() {
+void updateProjectionMatrix() {
     glMatrixMode(GL_PROJECTION);
     
     glLoadIdentity();
     
     gluPerspective (50.0*zoom, (float)winWidth/(float)winHeight, 0.1, 10);
+}
+
+void updateModelViewMatrix() {
+    glMatrixMode(GL_MODELVIEW);
+    
+    glLoadIdentity();
+
+    gluLookAt(camera[0], camera[1], camera[2], // camera position
+              lookAt[0], lookAt[1], lookAt[2], // look at point
+              0, 1, 0); // up-vector
 }
 
 // Called when the window is resized.
@@ -273,15 +283,8 @@ void reshape(int newWidth, int newHeight) {
 
     glViewport(0, 0, winWidth, winHeight);
 
-    updateZoom();
-
-    glMatrixMode(GL_MODELVIEW);
-    
-    glLoadIdentity();
-
-    gluLookAt(camera[0], camera[1], camera[2], // camera position
-              lookAt[0], lookAt[1], lookAt[2], // look at point
-              0, 1, 0); // up-vector
+    updateProjectionMatrix();
+    updateModelViewMatrix();
 }
 
 // Clears and displays the screen.
@@ -447,10 +450,10 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     //     robotAngles[0] += rotationSpeed;
     /*} else*/ if (is(key, "F1")) {
         zoom += zoomSpeed;
-        updateZoom();
+        updateProjectionMatrix();
     } else if (is(key, "F2")) {
         zoom -= zoomSpeed;
-        updateZoom();
+        updateProjectionMatrix();
     } else if (is(key, "F3")) {
         ECHO("FULLSCREEN");
     }
