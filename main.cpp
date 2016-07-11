@@ -335,7 +335,7 @@ void display() {
 
     setupModelViewMatrix();
 
-    //drawGround();
+    drawGround();
 
     drawRobot();
 
@@ -398,9 +398,9 @@ void jump(unsigned period) {
     const unsigned OPENING_LEGS = 1;
     const unsigned FLOOR_OPEN = 2;
     const unsigned CLOSING_LEGS = 3;
-    static unsigned state = 0;
+    static unsigned state = FLOOR_CLOSED;
     static double lastFrac = 0;
-    period /= numStates;
+    period = (period / numStates) * 0.97;
     double frac = riseCoef(period);
     if (frac < lastFrac) {
         state = (state + 1) % numStates;
