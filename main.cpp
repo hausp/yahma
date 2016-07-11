@@ -315,7 +315,6 @@ void setupModelViewMatrix() {
     gluLookAt(camera[0], camera[1], camera[2], // camera position
               lookAt[0], lookAt[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
-    TRACE(camera);
 }
 
 // Called when the window is resized.
@@ -336,7 +335,7 @@ void display() {
 
     setupModelViewMatrix();
 
-    drawGround();
+    //drawGround();
 
     drawRobot();
 
@@ -363,46 +362,66 @@ static double ftime() {
     return 1.0*t.tv_sec + 1e-6*t.tv_usec;
 }
 
+double riseCoef(unsigned period) {
+    return (static_cast<int>(globalTime) % period) / (period + 0.0);
+}
+
+double oscillationCoef(unsigned period) {
+    return std::abs(2 * std::abs(riseCoef(period) - 0.5) - 1);
+}
+
+double rise(unsigned period, double from, double to) {
+    return riseCoef(period) * (to - from) + from;
+}
+
 double oscillate(unsigned period, double from, double to) {
-    double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
-    double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
-    return coef * (to - from) + from;
+    return oscillationCoef(period) * (to - from) + from;
 }
 
 void bend(unsigned period) {
-    leftLegAngles[0] = oscillate(period, 0, bendingAngle);
-    leftThighAngles[0] = oscillate(period, 0, -bendingAngle);
-    rightLegAngles[0] = oscillate(period, 0, bendingAngle);
-    rightThighAngles[0] = oscillate(period, 0, -bendingAngle);
+    leftLegAngles[0] = rise(period, 0, bendingAngle);
+    leftThighAngles[0] = rise(period, 0, -bendingAngle);
+    rightLegAngles[0] = rise(period, 0, bendingAngle);
+    rightThighAngles[0] = rise(period, 0, -bendingAngle);
+}
+
+void unbend(unsigned period) {
+    leftLegAngles[0] = rise(period, bendingAngle, 0);
+    leftThighAngles[0] = rise(period, -bendingAngle, 0);
+    rightLegAngles[0] = rise(period, bendingAngle, 0);
+    rightThighAngles[0] = rise(period, -bendingAngle, 0);
 }
 
 void jump(unsigned period) {
-    static unsigned state = 0;
-    static bool wait = false;
     const unsigned numStates = 4;
-    double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
-    if (frac > 0.99) {
-        if (!wait) {
-            state = (state + 1) % numStates;
-            wait = true;
-        }
-        return;
+    const unsigned FLOOR_CLOSED = 0;
+    const unsigned OPENING_LEGS = 1;
+    const unsigned FLOOR_OPEN = 2;
+    const unsigned CLOSING_LEGS = 3;
+    static unsigned state = 0;
+    static double lastFrac = 0;
+    period /= numStates;
+    double frac = riseCoef(period);
+    if (frac < lastFrac) {
+        state = (state + 1) % numStates;
     }
-    wait = false;
-    TRACE(state);
+    lastFrac = frac;
     switch (state) {
-        case 0:
-        case 2:
+        case FLOOR_CLOSED:
+        case FLOOR_OPEN:
             bend(period);
-            // robotCenter[1] = oscillate(period/2, 0, 0.1);
             break;
-        case 1:
-            leftLegAngles[2] = oscillate(period, 0, 40);
-            rightLegAngles[2] = oscillate(period, 0, -40);
+        case OPENING_LEGS:
+            unbend(period);
+            leftLegAngles[2] = rise(period, 0, 40);
+            rightLegAngles[2] = rise(period, 0, -40);
+            robotCenter[1] = oscillate(period, 0, 0.1);
             break;
-        case 3:
-            leftLegAngles[2] = oscillate(period, 40, 0);
-            rightLegAngles[2] = oscillate(period, -40, 0);
+        case CLOSING_LEGS:
+            unbend(period);
+            leftLegAngles[2] = rise(period, 40, 0);
+            rightLegAngles[2] = rise(period, -40, 0);
+            robotCenter[1] = oscillate(period, 0, 0.1);
             break;
     }
 }
@@ -411,10 +430,9 @@ void jump(unsigned period) {
 void idle() {
     globalTime = ftime()*100;
     unsigned period;
-    reset();
     if (mode == Mode::JUMPING_JACKS) {
-        const bool testMode = false;
-        period = 850;
+        const bool testMode = true;
+        period = 85;
         leftArmAngles[2] = oscillate(period, -70, 70);
         leftForearmAngles[2] = oscillate(period, -60, 60);
         rightArmAngles[2] = oscillate(period, 70, -70);
@@ -501,6 +519,7 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
     switch (key) {
         case ' ':
             mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
+            reset();
             break;
         case 'a':
         case 'A':
@@ -526,9 +545,11 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
 void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
     switch (key) {
         case 'w':
+        case 'W':
             move = false;
             break;
         case 's':
+        case 'S':
             move = false;
             break;
     }
