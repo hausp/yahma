@@ -107,7 +107,7 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
-AngleGroup robotAngles = {0, 60, 0};
+AngleGroup robotAngles = {0, 180, 0};
 AngleGroup headAngles;
 AngleGroup bodyAngles;
 AngleGroup leftArmAngles;
@@ -412,8 +412,12 @@ static double ftime() {
     return 1.0*t.tv_sec + 1e-6*t.tv_usec;
 }
 
+double genericCoef(unsigned long long timestamp, unsigned period) {
+    return (timestamp % period) / (period + 0.0);
+}
+
 double riseCoef(unsigned period) {
-    return (static_cast<int>(globalTime) % period) / (period + 0.0);
+    return genericCoef(globalTime, period);
 }
 
 double oscillationCoef(unsigned period) {
@@ -464,41 +468,52 @@ void jump(unsigned period) {
     const unsigned CLOSING_LEGS = 3;
     static unsigned state = FLOOR_CLOSED;
     static double lastFrac = 0;
+    static double timeOffset = 0;
     const unsigned bendingPeriod = 0.2 * period;
     const unsigned legMovePeriod = (period - bendingPeriod) / 2;
     unsigned currPeriod = (state == FLOOR_CLOSED || state == FLOOR_OPEN)
                         ? bendingPeriod
                         : legMovePeriod;
+    globalTime += timeOffset;
     double frac = riseCoef(currPeriod);
     if (frac < lastFrac) {
         state = (state + 1) % numStates;
+        timeOffset = 0;
+        if (state == OPENING_LEGS || state == CLOSING_LEGS) {
+            auto coef1 = genericCoef(globalTime, bendingPeriod);
+            auto coef2 = genericCoef(globalTime, legMovePeriod);
+            if (std::abs(coef1 - coef2) >= 0.2) {
+                timeOffset = legMovePeriod - bendingPeriod;
+            }
+        }
     }
     lastFrac = frac;
     switch (state) {
         case FLOOR_CLOSED:
         case FLOOR_OPEN:
-            bend(bendingPeriod);
+            bend(currPeriod);
             break;
         case OPENING_LEGS:
-            riseArms(legMovePeriod);
-            unbend(legMovePeriod);
-            leftLegAngles[2] = rise(legMovePeriod, 0, 40);
-            rightLegAngles[2] = rise(legMovePeriod, 0, -40);
-            robotCenter[1] = oscillate(legMovePeriod, 0, 0.1);
+            riseArms(currPeriod);
+            unbend(currPeriod);
+            leftLegAngles[2] = rise(currPeriod, 0, 40);
+            rightLegAngles[2] = rise(currPeriod, 0, -40);
+            robotCenter[1] = oscillate(currPeriod, 0, 0.1);
             break;
-        case CLOSING_LEGS:
-            lowerArms(legMovePeriod);
-            unbend(legMovePeriod);
-            leftLegAngles[2] = rise(legMovePeriod, 40, 0);
-            rightLegAngles[2] = rise(legMovePeriod, -40, 0);
-            robotCenter[1] = oscillate(legMovePeriod, 0, 0.1);
+         case CLOSING_LEGS:
+            lowerArms(currPeriod);
+            unbend(currPeriod);
+            leftLegAngles[2] = rise(currPeriod, 40, 0);
+            rightLegAngles[2] = rise(currPeriod, -40, 0);
+            robotCenter[1] = oscillate(currPeriod, 0, 0.1);
             break;
     }
+    globalTime -= timeOffset;
 }
 
 // Updates all animated properties and the screen.
 void idle() {
-    auto currentTime = ftime()*100;
+    auto currentTime = ftime() * 100;
     auto diff = currentTime - globalTime;
     globalTime = currentTime;
     unsigned period;
@@ -514,8 +529,8 @@ void idle() {
             leftArmAngles[0] = oscillate(period, 25, -25);
             rightArmAngles[0] = oscillate(period, -25, 25);
 
-            leftLegAngles[0] = oscillate(period, -50, 50);
-            rightLegAngles[0] = oscillate(period, 50, -50);
+            leftLegAngles[0] = oscillate(period, -40, 40);
+            rightLegAngles[0] = oscillate(period, 40, -40);
             leftThighAngles[0] = oscillate(period, -40, 0);
             rightThighAngles[0] = oscillate(period, 0, -40);
 
