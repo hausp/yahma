@@ -24,6 +24,7 @@
 // Types
 using Point = std::array<double, 3>;
 using AngleGroup = std::array<double, 3>;
+using Color3 = std::array<float, 3>;
 
 struct Size {
     double width;
@@ -62,10 +63,10 @@ unsigned winHeight = 600;
 GLuint texture;
 unsigned long long globalTime = 0;
 
-float lightPosition[] = {0, 20, 1, 1};
+float lightPosition[] = {0, 50, 0, 1};
 float lightCoefs[] = {0.5, 0.5, 0.5, 1.0};
 float ambientCoefs[] = {1, 1, 1, 0.7};
-float diffuseCoefs[] = {1, 1, 1, 1};
+float diffuseCoefs[] = {1, 1, 1, 0.7};
 float specularCoefs[] = {1, 1, 1, 0.2};
 int specularExponent = 90;
 
@@ -126,10 +127,26 @@ void rotate(const AngleGroup& angles) {
     glRotated(angles[2], 0, 0, 1);
 }
 
-void box(const Size& size) {
+void box(const Size& size, const Color3& color = {1, 1, 1}) {
     glPushMatrix();
     glScaled(size.width, size.height, size.thickness);
+    float coefs[] = { color[0], color[1], color[2], 0.5 };
+    float specCoefs[] = { color[0], color[1], color[2], 0.1 };
+    glColor3f(color[0], color[1], color[2]);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, coefs);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specCoefs);
     glutSolidCube(1);
+    glPopMatrix();
+}
+
+void drawSphere(double radius, double x, double y, const Color3& color = {1, 1, 1}) {
+    glPushMatrix();
+    float coefs[] = { color[0], color[1], color[2], 0.5 };
+    float specCoefs[] = { color[0], color[1], color[2], 0.1 };
+    glColor3f(color[0], color[1], color[2]);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, coefs);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specCoefs);
+    glutSolidSphere(radius, x, y);
     glPopMatrix();
 }
 
@@ -149,14 +166,14 @@ void drawLeftArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     rotate(leftArmAngles);
     glTranslated(armSize.width/2, 0, 0);
-    box(armSize);
+    box(armSize, {0.3, 0.1, 0.3});
 
     glTranslated(armSize.width/2 + jointRadius/2, 0, 0);
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     glPushMatrix();
     rotate(leftForearmAngles);
@@ -173,14 +190,14 @@ void drawRightArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     rotate(rightArmAngles);
     glTranslated(-armSize.width/2, 0, 0);
-    box(armSize);
+    box(armSize, {0.3, 0.1, 0.3});
 
     glTranslated(-armSize.width/2 - jointRadius/2, 0, 0);
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100);
 
     glPushMatrix();
     rotate(rightForearmAngles);
@@ -197,14 +214,14 @@ void drawLeftLeg() {
                  -bodySize.height/2,
                  0);
 
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     rotate(leftLegAngles);
     glTranslated(0, -legSize.height/2, 0);
     box(legSize);
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     glPushMatrix();
     rotate(leftThighAngles);
@@ -221,14 +238,15 @@ void drawRightLeg() {
                  -bodySize.height/2,
                  0);
 
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     rotate(rightLegAngles);
     glTranslated(0, -legSize.height/2, 0);
+
     box(legSize);
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    glutSolidSphere(jointRadius, 100, 100);
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
 
     glPushMatrix();
     rotate(rightThighAngles);
@@ -241,12 +259,14 @@ void drawRightLeg() {
 
 void drawBody() {
     glPushMatrix();
-    box(bodySize);
 
     drawLeftArm();
     drawRightArm();
     drawLeftLeg();
     drawRightLeg();
+
+    box(bodySize, {0.3, 0.1, 0.3});
+    
     glPopMatrix();
 }
 
@@ -262,7 +282,12 @@ void drawRobot() {
 }
 
 void drawGround() {
+    glPushMatrix();
     glColor3f(0.5, 0.5, 0.5);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
+    //glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
     glBegin(GL_QUADS);
         //tl
         glVertex3f(-10000.0,
@@ -293,6 +318,7 @@ void drawGround() {
                     + 2 * jointRadius),
                    -10000000.0);
     glEnd();
+    glPopMatrix();
 }
 
 void updateProjectionMatrix() {
@@ -491,10 +517,10 @@ bool init() {
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
-    glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
+    // glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
+    // glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
+    // glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
+    // glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
