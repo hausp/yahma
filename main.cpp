@@ -75,7 +75,7 @@ enum class Mode {
 };
 auto mode = Mode::JUMPING_JACKS;
 
-const double rotationSpeed = 5;
+const double rotationSpeed = 2.5;
 const double moveSpeed = 0.003;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
@@ -92,6 +92,8 @@ double moveRadius = 3;
 double theta = 0, phi = 0;
 int oldX, oldY;
 bool rotating = false;
+bool move = false;
+short spin = 0;
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -113,9 +115,10 @@ AngleGroup leftThighAngles;
 AngleGroup leftLegAngles;
 AngleGroup rightThighAngles;
 AngleGroup rightLegAngles;
-
-bool move;
 // -----------------------------------------
+
+void onMouseMove(int, int);
+void onMousePress(int, int, int, int);
 
 void rotate(const AngleGroup& angles) {
     glRotated(angles[0], 1, 0, 0);
@@ -442,6 +445,7 @@ void jump(unsigned period) {
 void idle() {
     globalTime = ftime()*100;
     unsigned period;
+    robotAngles[1] += rotationSpeed * spin;
     if (mode == Mode::JUMPING_JACKS) {
         period = 85;
         jump(period);
@@ -495,6 +499,8 @@ bool init() {
     glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 
     reset();
+    onMousePress(GLUT_LEFT_BUTTON, GLUT_DOWN, 0, 0);
+    onMouseMove(0, 0);
     return true;
 }
 
@@ -519,11 +525,11 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
             break;
         case 'a':
         case 'A':
-            robotAngles[1] += rotationSpeed;
+            spin = 1;
             break;
         case 'd':
         case 'D':
-            robotAngles[1] -= rotationSpeed;
+            spin = -1;
             break;
         case 'w':
         case 'W':
@@ -540,13 +546,14 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
 
 void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
     switch (key) {
+        case 'a':
+        case 'A':
+        case 'd':
+        case 'D':
+            spin = 0;
+            break;
         case 'w':
         case 'W':
-            move = false;
-            if (mode == Mode::WALKING) {
-                reset();
-            }
-            break;
         case 's':
         case 'S':
             move = false;
