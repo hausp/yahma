@@ -25,6 +25,7 @@
 using Point = std::array<double, 3>;
 using AngleGroup = std::array<double, 3>;
 using Color3 = std::array<float, 3>;
+using Color4 = std::array<float, 4>;
 
 struct Size {
     double width;
@@ -127,25 +128,24 @@ void rotate(const AngleGroup& angles) {
     glRotated(angles[2], 0, 0, 1);
 }
 
-void box(const Size& size, const Color3& color = {1, 1, 1}) {
+void drawBox(const Size& size,
+         const Color4& color = {1, 1, 1, 1},
+         int specularCoef = 0) {
     glPushMatrix();
     glScaled(size.width, size.height, size.thickness);
-    float coefs[] = { color[0], color[1], color[2], 0.5 };
-    float specCoefs[] = { color[0], color[1], color[2], 0.1 };
-    glColor3f(color[0], color[1], color[2]);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, coefs);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specCoefs);
+    glColor4f(color[0], color[1], color[2], color[3]);
+    glMateriali(GL_FRONT, GL_SHININESS, specularCoef);
     glutSolidCube(1);
     glPopMatrix();
 }
 
-void drawSphere(double radius, double x, double y, const Color3& color = {1, 1, 1}) {
+void drawSphere(double radius,
+                double x, double y,
+                const Color4& color = {1, 1, 1, 1},
+                int specularCoef = 0) {
     glPushMatrix();
-    float coefs[] = { color[0], color[1], color[2], 0.5 };
-    float specCoefs[] = { color[0], color[1], color[2], 0.1 };
-    glColor3f(color[0], color[1], color[2]);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, coefs);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specCoefs);
+    glColor4f(color[0], color[1], color[2], color[3]);
+    glMateriali(GL_FRONT, GL_SHININESS, specularCoef);
     glutSolidSphere(radius, x, y);
     glPopMatrix();
 }
@@ -156,7 +156,7 @@ void drawHead() {
                  0 + bodySize.height/2 + headSize.height/2 + neckHeight,
                  0);
     rotate(headAngles);
-    box(headSize);
+    drawBox(headSize);
     glPopMatrix();
 }
 
@@ -166,19 +166,19 @@ void drawLeftArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     rotate(leftArmAngles);
     glTranslated(armSize.width/2, 0, 0);
-    box(armSize, {0.3, 0.1, 0.3});
+    drawBox(armSize, {0.3, 0.1, 0.3, 1});
 
     glTranslated(armSize.width/2 + jointRadius/2, 0, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     glPushMatrix();
     rotate(leftForearmAngles);
     glTranslated(forearmSize.width/2, 0, 0);
-    box(forearmSize);
+    drawBox(forearmSize);
     glPopMatrix();
 
     glPopMatrix();
@@ -190,11 +190,11 @@ void drawRightArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     rotate(rightArmAngles);
     glTranslated(-armSize.width/2, 0, 0);
-    box(armSize, {0.3, 0.1, 0.3});
+    drawBox(armSize, {0.3, 0.1, 0.3, 1});
 
     glTranslated(-armSize.width/2 - jointRadius/2, 0, 0);
     drawSphere(jointRadius, 100, 100);
@@ -202,7 +202,7 @@ void drawRightArm() {
     glPushMatrix();
     rotate(rightForearmAngles);
     glTranslated(-forearmSize.width/2, 0, 0);
-    box(forearmSize);
+    drawBox(forearmSize);
     glPopMatrix();
 
     glPopMatrix();
@@ -214,19 +214,19 @@ void drawLeftLeg() {
                  -bodySize.height/2,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     rotate(leftLegAngles);
     glTranslated(0, -legSize.height/2, 0);
-    box(legSize);
+    drawBox(legSize);
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     glPushMatrix();
     rotate(leftThighAngles);
     glTranslated(0, -thighSize.height/2, 0);
-    box(thighSize);
+    drawBox(thighSize);
     glPopMatrix();
 
     glPopMatrix();
@@ -238,20 +238,20 @@ void drawRightLeg() {
                  -bodySize.height/2,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     rotate(rightLegAngles);
     glTranslated(0, -legSize.height/2, 0);
 
-    box(legSize);
+    drawBox(legSize);
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3});
+    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
 
     glPushMatrix();
     rotate(rightThighAngles);
     glTranslated(0, -thighSize.height/2, 0);
-    box(thighSize);
+    drawBox(thighSize);
     glPopMatrix();
 
     glPopMatrix();
@@ -265,7 +265,7 @@ void drawBody() {
     drawLeftLeg();
     drawRightLeg();
 
-    box(bodySize, {0.3, 0.1, 0.3});
+    drawBox(bodySize, {0.3, 0.1, 0.3, 1});
     
     glPopMatrix();
 }
@@ -283,11 +283,8 @@ void drawRobot() {
 
 void drawGround() {
     glPushMatrix();
-    glColor3f(0.5, 0.5, 0.5);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
-    //glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
+    glColor4f(0.5, 0.5, 0.5, 1);
+    glMateriali(GL_FRONT, GL_SHININESS, 5);
     glBegin(GL_QUADS);
         //tl
         glVertex3f(-10000.0,
@@ -517,10 +514,6 @@ bool init() {
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    // glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientCoefs);
-    // glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseCoefs);
-    // glMaterialfv(GL_FRONT, GL_SPECULAR, specularCoefs);
-    // glMateriali(GL_FRONT, GL_SHININESS, specularExponent);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
