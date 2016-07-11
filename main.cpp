@@ -1,6 +1,7 @@
 #include <array>
 #include <cmath>
 #include <ctime>
+#include <sys/time.h>
 #include <fstream>
 #include <GL/glut.h>
 #include <iostream>
@@ -315,6 +316,13 @@ void reset() {
     rightLegAngles = {0, 0, 0};
 }
 
+static double ftime() {
+    struct timeval t;
+    gettimeofday(&t, NULL);
+
+    return 1.0*t.tv_sec + 1e-6*t.tv_usec;
+}
+
 double oscillate(unsigned period, double from, double to) {
     double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
     double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
@@ -323,11 +331,11 @@ double oscillate(unsigned period, double from, double to) {
 
 // Updates all animated properties and the screen.
 void idle() {
-    globalTime = clock();
+    globalTime = ftime()*100;
     unsigned period;
     reset();
     if (mode == Mode::JUMPING_JACKS) {
-        period = 0.2 * CLOCKS_PER_SEC;
+        period = 60;
         leftArmAngles[2] = oscillate(period, -70, 70);
         leftForearmAngles[2] = oscillate(period, -60, 60);
         rightArmAngles[2] = oscillate(period, 70, -70);
@@ -339,7 +347,7 @@ void idle() {
         robotCenter[1] = oscillate(period/2, 0, 0.1);
     } else if (mode == Mode::WALKING) {
         if (move) {
-            period = 0.5 * CLOCKS_PER_SEC;
+            period = 70;
             headAngles[1] = oscillate(period, -5, 5);
             bodyAngles[1] = oscillate(period, -10, 10);
             leftArmAngles[0] = oscillate(period, 25, -25);
