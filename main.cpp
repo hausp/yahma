@@ -71,6 +71,7 @@ GLuint texture;
 unsigned long long globalTime = 0;
 
 float lightPosition[] = {0, 20, 1, 1};
+float lightCoefs[] = {0.5, 0.5, 0.5, 1.0};
 float ambientCoefs[] = {1, 1, 1, 0.7};
 float diffuseCoefs[] = {1, 1, 1, 1};
 float specularCoefs[] = {1, 1, 1, 0.2};
@@ -91,8 +92,8 @@ const int bendingAngle = 20;
 
 // Camera related stuff
 double zoom = 1;
-const double zoomSpeed = 0.1, zNear = 1, zFar = 5;
-Point camera = {0, 1, -2}, lookAt = {0, 0, 0};
+const double zoomSpeed = 0.1, zNear = 2, zFar = 100;
+Point camera = {0, 1, -3}, lookAt = {0, 0, 0};
 
 // Nice moving around related stuff
 double moveRadius = 3;
@@ -265,10 +266,44 @@ void drawRobot() {
     glPopMatrix();
 }
 
+void drawGround() {
+    glColor3f(0.5, 0.5, 0.5);
+    glBegin(GL_QUADS);
+        //tl
+        glVertex3f(-10000.0,
+                   -(bodySize.height/2
+                     + legSize.height
+                     + thighSize.height
+                     + 2 * jointRadius),
+                   10000000.0);
+        //tr
+        glVertex3f(10000000.0,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + 2 * jointRadius),
+                   10000000.0);
+        //br
+        glVertex3f(10000000.0,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + 2 * jointRadius),
+                   -10000000.0);
+        //bl
+        glVertex3f(-10000000.0,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + 2 * jointRadius),
+                   -10000000.0);
+    glEnd();
+}
+
 void updateProjectionMatrix() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(50.0 * zoom, // field of view angle in y (degrees)
+    gluPerspective(45 * zoom, // field of view angle in y (degrees)
                    (float)winWidth / (float)winHeight, // aspect ratio
                    zNear, // zNear
                    zFar); // zFar
@@ -280,6 +315,7 @@ void setupModelViewMatrix() {
     gluLookAt(camera[0], camera[1], camera[2], // camera position
               lookAt[0], lookAt[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
+    TRACE(camera);
 }
 
 // Called when the window is resized.
@@ -289,8 +325,8 @@ void reshape(int newWidth, int newHeight) {
 
     glViewport(0, 0, winWidth, winHeight);
 
-    setupModelViewMatrix();
     updateProjectionMatrix();
+    setupModelViewMatrix();
 }
 
 // Clears and displays the screen.
@@ -300,27 +336,9 @@ void display() {
 
     setupModelViewMatrix();
 
-    drawRobot();
+    drawGround();
 
-    glColor3f(1, 0, 0);
-    glBegin(GL_QUADS);
-        //tl
-        glVertex3f(-10000.0,
-                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
-                   10000000.0);
-        //tr
-        glVertex3f(10000000.0,
-                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
-                   10000000.0);
-        //br
-        glVertex3f(10000000.0,
-                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
-                   -10000000.0);
-        //bl
-        glVertex3f(-10000000.0,
-                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
-                   -10000000.0);
-    glEnd();
+    drawRobot();
 
     glutSwapBuffers();
 }
@@ -455,11 +473,11 @@ bool init() {
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    //glLightfv(GL_LIGHT0, GL_AMBIENT, ambientCoefs);
-    //glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseCoefs);
+    // glLightfv(GL_LIGHT0, GL_AMBIENT, lightCoefs);
+    // glLightfv(GL_LIGHT0, GL_DIFFUSE, lightCoefs);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LESS);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     // loadObj(model);
@@ -551,9 +569,9 @@ void onMouseMove(int x, int y) {
     if (rotating) {
         theta -= (x - oldX) * 0.01;
         phi += (y - oldY) * 0.01;
-        camera[0] = robotCenter[0] + moveRadius * cos(phi) * sin(theta);
-        camera[1] = robotCenter[1] + moveRadius * sin(phi) * sin(theta);
-        camera[2] = robotCenter[2] + moveRadius * cos(theta);
+        camera[0] = lookAt[0] + moveRadius * cos(phi) * sin(theta);
+        camera[1] = lookAt[1] + moveRadius * sin(phi) * sin(theta);
+        camera[2] = lookAt[2] + moveRadius * cos(theta);
 
         setupModelViewMatrix();
 
