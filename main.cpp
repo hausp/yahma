@@ -23,14 +23,7 @@
 
 // Types
 using Point = std::array<double, 3>;
-// using Triangle = std::array<Point, 3>;
-// using Texture = std::array<double, 2>;
 using AngleGroup = std::array<double, 3>;
-struct Material {
-    double ns, ni, d;
-    float ka[4], kd[4], ks[4];
-    unsigned illum;
-};
 
 struct Size {
     double width;
@@ -52,7 +45,6 @@ std::ostream& operator<<(std::ostream& stream, const std::array<double, 3>& arra
 
 // Globals
 std::string title = "YAHMA";
-std::string model = "subzero.obj";
 std::unordered_map<std::string, int> keyMap = {
     {"F1", 1},
     {"F2", 2},
@@ -111,16 +103,16 @@ Size thighSize = {0.05, 0.25, 0.05};
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
 AngleGroup robotAngles = {0, 60, 0};
-AngleGroup headAngles = {0, 0, 0};
-AngleGroup bodyAngles = {0, 0, 0};
-AngleGroup leftArmAngles = {0, 0, 0};
-AngleGroup leftForearmAngles = {0, 0, 0};
-AngleGroup rightArmAngles = {0, 0, 0};
-AngleGroup rightForearmAngles = {0, 0, 0};
-AngleGroup leftThighAngles = {0, 0, 0};
-AngleGroup leftLegAngles = {0, 0, 0};
-AngleGroup rightThighAngles = {0, 0, 0};
-AngleGroup rightLegAngles = {0, 0, 0};
+AngleGroup headAngles;
+AngleGroup bodyAngles;
+AngleGroup leftArmAngles;
+AngleGroup leftForearmAngles;
+AngleGroup rightArmAngles;
+AngleGroup rightForearmAngles;
+AngleGroup leftThighAngles;
+AngleGroup leftLegAngles;
+AngleGroup rightThighAngles;
+AngleGroup rightLegAngles;
 
 bool move;
 // -----------------------------------------
@@ -392,6 +384,20 @@ void unbend(unsigned period) {
     rightThighAngles[0] = rise(period, -bendingAngle, 0);
 }
 
+void riseArms(unsigned period) {
+    leftArmAngles[2] = rise(period, -70, 70);
+    leftForearmAngles[2] = rise(period, -60, 60);
+    rightArmAngles[2] = rise(period, 70, -70);
+    rightForearmAngles[2] = rise(period, 60, -60);
+}
+
+void lowerArms(unsigned period) {
+    leftArmAngles[2] = rise(period, 70, -70);
+    leftForearmAngles[2] = rise(period, 60, -60);
+    rightArmAngles[2] = rise(period, -70, 70);
+    rightForearmAngles[2] = rise(period, -60, 60);
+}
+
 void jump(unsigned period) {
     const unsigned numStates = 4;
     const unsigned FLOOR_CLOSED = 0;
@@ -400,8 +406,12 @@ void jump(unsigned period) {
     const unsigned CLOSING_LEGS = 3;
     static unsigned state = FLOOR_CLOSED;
     static double lastFrac = 0;
-    period = (period / numStates) * 0.97;
-    double frac = riseCoef(period);
+    const unsigned bendingPeriod = 0.2 * period;
+    const unsigned legMovePeriod = (period - bendingPeriod) / 2;
+    unsigned currPeriod = (state == FLOOR_CLOSED || state == FLOOR_OPEN)
+                        ? bendingPeriod
+                        : legMovePeriod;
+    double frac = riseCoef(currPeriod);
     if (frac < lastFrac) {
         state = (state + 1) % numStates;
     }
@@ -409,19 +419,21 @@ void jump(unsigned period) {
     switch (state) {
         case FLOOR_CLOSED:
         case FLOOR_OPEN:
-            bend(period);
+            bend(bendingPeriod);
             break;
         case OPENING_LEGS:
-            unbend(period);
-            leftLegAngles[2] = rise(period, 0, 40);
-            rightLegAngles[2] = rise(period, 0, -40);
-            robotCenter[1] = oscillate(period, 0, 0.1);
+            riseArms(legMovePeriod);
+            unbend(legMovePeriod);
+            leftLegAngles[2] = rise(legMovePeriod, 0, 40);
+            rightLegAngles[2] = rise(legMovePeriod, 0, -40);
+            robotCenter[1] = oscillate(legMovePeriod, 0, 0.1);
             break;
         case CLOSING_LEGS:
-            unbend(period);
-            leftLegAngles[2] = rise(period, 40, 0);
-            rightLegAngles[2] = rise(period, -40, 0);
-            robotCenter[1] = oscillate(period, 0, 0.1);
+            lowerArms(legMovePeriod);
+            unbend(legMovePeriod);
+            leftLegAngles[2] = rise(legMovePeriod, 40, 0);
+            rightLegAngles[2] = rise(legMovePeriod, -40, 0);
+            robotCenter[1] = oscillate(legMovePeriod, 0, 0.1);
             break;
     }
 }
@@ -431,26 +443,8 @@ void idle() {
     globalTime = ftime()*100;
     unsigned period;
     if (mode == Mode::JUMPING_JACKS) {
-        const bool testMode = true;
         period = 85;
-        leftArmAngles[2] = oscillate(period, -70, 70);
-        leftForearmAngles[2] = oscillate(period, -60, 60);
-        rightArmAngles[2] = oscillate(period, 70, -70);
-        rightForearmAngles[2] = oscillate(period, 60, -60);
-
-        if (testMode) {
-            jump(period);            
-        } else {
-            leftLegAngles[2] = oscillate(period, 0, 40);
-            rightLegAngles[2] = oscillate(period, 0, -40);
-
-            leftLegAngles[0] = oscillate(period, bendingAngle, 0);
-            leftThighAngles[0] = oscillate(period, -bendingAngle, 0);
-            rightLegAngles[0] = oscillate(period, bendingAngle, 0);
-            rightThighAngles[0] = oscillate(period, -bendingAngle, 0);
-
-            robotCenter[1] = oscillate(period/2, 0, 0.1);
-        }
+        jump(period);
     } else if (mode == Mode::WALKING) {
         if (move) {
             period = 70;
@@ -498,7 +492,7 @@ bool init() {
     glDepthFunc(GL_LESS);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-    // loadObj(model);
+    reset();
     return true;
 }
 
