@@ -300,6 +300,27 @@ void display() {
     setupModelViewMatrix();
 
     drawRobot();
+
+    glColor3f(1, 0, 0);
+    glBegin(GL_QUADS);
+        //tl
+        glVertex3f(-10000.0,
+                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
+                   10000000.0);
+        //tr
+        glVertex3f(10000000.0,
+                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
+                   10000000.0);
+        //br
+        glVertex3f(10000000.0,
+                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
+                   -10000000.0);
+        //bl
+        glVertex3f(-10000000.0,
+                   -(bodySize.height/2 + legSize.height + thighSize.height + 2 * jointRadius),
+                   -10000000.0);
+    glEnd();
+
     glutSwapBuffers();
 }
 
