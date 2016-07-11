@@ -104,6 +104,7 @@ Size armSize = {0.125, 0.05, 0.05};
 Size forearmSize = {0.125, 0.05, 0.05};
 Size legSize = {0.05, 0.15, 0.05};
 Size thighSize = {0.05, 0.25, 0.05};
+double legTotalHeight = legSize.height + thighSize.height + jointRadius;
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
@@ -309,34 +310,22 @@ void drawGround() {
     glBegin(GL_QUADS);
         //bl
         glVertex3f(-100,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + jointRadius),
+                   -(bodySize.height/2 + legTotalHeight),
                    -100);
         glNormal3f(0, 1, 0);
         //br
         glVertex3f(100,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + jointRadius),
+                   -(bodySize.height/2 + legTotalHeight),
                    -100);
         glNormal3f(0, 1, 0);
         //tr
         glVertex3f(100,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + jointRadius),
+                   -(bodySize.height/2 + legTotalHeight),
                    100);
         glNormal3f(0, 1, 0);
         //tl
         glVertex3f(-100,
-                   -(bodySize.height/2
-                     + legSize.height
-                     + thighSize.height
-                     + jointRadius),
+                   -(bodySize.height/2 + legTotalHeight),
                    100);
         glNormal3f(0, 1, 0);
     glEnd();
@@ -432,6 +421,22 @@ double oscillate(unsigned period, double from, double to) {
     return oscillationCoef(period) * (to - from) + from;
 }
 
+double irregularOscillate(unsigned period, double from, double to, double end) {
+    static bool state = false;
+    static double lastFrac = 0;
+    period /= 2;
+    double frac = riseCoef(period);
+    if (frac < lastFrac) {
+        state = !state;
+    }
+    lastFrac = frac;
+    if (!state) {
+        return rise(period, from, to);        
+    } else {
+        return rise(period, to, end);        
+    }
+}
+
 void bend(unsigned period) {
     leftLegAngles[0] = rise(period, 0, bendingAngle);
     leftThighAngles[0] = rise(period, 0, -bendingAngle);
@@ -488,6 +493,10 @@ void jump(unsigned period) {
         }
     }
     lastFrac = frac;
+
+    double angle = 40;
+    double c = cos(angle * M_PI / 180);
+    double offset = legTotalHeight * (1 - c);
     switch (state) {
         case FLOOR_CLOSED:
         case FLOOR_OPEN:
@@ -496,16 +505,16 @@ void jump(unsigned period) {
         case OPENING_LEGS:
             riseArms(currPeriod);
             unbend(currPeriod);
-            leftLegAngles[2] = rise(currPeriod, 0, 40);
-            rightLegAngles[2] = rise(currPeriod, 0, -40);
-            robotCenter[1] = oscillate(currPeriod, 0, 0.1);
+            leftLegAngles[2] = rise(currPeriod, 0, angle);
+            rightLegAngles[2] = rise(currPeriod, 0, -angle);
+            robotCenter[1] = irregularOscillate(currPeriod, 0, 0.1, -offset);
             break;
          case CLOSING_LEGS:
             lowerArms(currPeriod);
             unbend(currPeriod);
-            leftLegAngles[2] = rise(currPeriod, 40, 0);
-            rightLegAngles[2] = rise(currPeriod, -40, 0);
-            robotCenter[1] = oscillate(currPeriod, 0, 0.1);
+            leftLegAngles[2] = rise(currPeriod, angle, 0);
+            rightLegAngles[2] = rise(currPeriod, -angle, 0);
+            robotCenter[1] = irregularOscillate(currPeriod, -offset, 0.1, 0);
             break;
     }
     globalTime -= timeOffset;
@@ -643,8 +652,6 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     } else if (is(key, "F2")) {
         zoom -= zoomSpeed;
         updateProjectionMatrix();
-    } else if (is(key, "F3")) {
-        ECHO("FULLSCREEN");
     }
 }
 
