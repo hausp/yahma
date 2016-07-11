@@ -79,7 +79,7 @@ enum class Mode {
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.016;
+const double moveSpeed = 0.012;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
@@ -545,7 +545,7 @@ void idle() {
 
             robotCenter[1] = oscillate(period/2, -0.15, 0.1);
 
-            velocity = polarToCartesian(move * moveSpeed, robotAngles[1]);
+            velocity = polarToCartesian(diff * move * moveSpeed, robotAngles[1]);
             robotCenter[0] += velocity[0];
             robotCenter[1] += velocity[1];
             robotCenter[2] += velocity[2];
