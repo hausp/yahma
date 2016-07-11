@@ -77,9 +77,9 @@ auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 2.5;
 const double moveSpeed = 0.003;
-double neckHeight = 0.05;
-double jointRadius = 0.04;
-double shoulderOffset = 0.35;
+const double neckHeight = 0.05;
+const double jointRadius = 0.04;
+const double shoulderOffset = 0.35;
 const int bendingAngle = 20;
 
 // Camera related stuff
@@ -92,7 +92,7 @@ double moveRadius = 3;
 double theta = 0, phi = 0;
 int oldX, oldY;
 bool rotating = false;
-bool move = false;
+short move = 0;
 short spin = 0;
 
 Size headSize = {0.3, 0.2, 0.2};
@@ -350,6 +350,13 @@ void reset() {
     rightLegAngles = {0, 0, 0};
 }
 
+Point polarToCartesian(double distance, double angle) {
+    double a = angle * M_PI / 180;
+    double s = sin(a);
+    double c = cos(a);
+    return {-distance * s, 0, -distance * c};
+}
+
 static double ftime() {
     struct timeval t;
     gettimeofday(&t, NULL);
@@ -450,7 +457,7 @@ void idle() {
         period = 85;
         jump(period);
     } else if (mode == Mode::WALKING) {
-        if (move) {
+        if (move != 0) {
             period = 70;
             headAngles[1] = oscillate(period, -5, 5);
             bodyAngles[1] = oscillate(period, -10, 10);
@@ -464,6 +471,7 @@ void idle() {
 
             robotCenter[1] = oscillate(period/2, 0, 0.1);
 
+            velocity = polarToCartesian(move * moveSpeed, robotAngles[1]);
             robotCenter[0] += velocity[0];
             robotCenter[1] += velocity[1];
             robotCenter[2] += velocity[2];
@@ -509,13 +517,6 @@ bool is(int key, const std::string& keyName) {
     return key == keyMap[keyName];
 }
 
-Point polarToCartesian(double distance, double angle) {
-    double a = angle * M_PI / 180;
-    double s = sin(a);
-    double c = cos(a);
-    return {-distance * s, 0, -distance * c};
-}
-
 // Called when a normal key is pressed.
 void onKeyPress(unsigned char key, int mouseX, int mouseY) {
     switch (key) {
@@ -533,13 +534,11 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
             break;
         case 'w':
         case 'W':
-            velocity = polarToCartesian(moveSpeed, robotAngles[1]);
-            move = true;
+            move = 1;
             break;
         case 's':
         case 'S':
-            velocity = polarToCartesian(-moveSpeed, robotAngles[1]);
-            move = true;
+            move = -1;
             break;
     }
 }
@@ -556,7 +555,7 @@ void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
         case 'W':
         case 's':
         case 'S':
-            move = false;
+            move = 0;
             if (mode == Mode::WALKING) {
                 reset();
             }
