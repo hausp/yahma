@@ -82,7 +82,7 @@ enum class Mode {
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 5;
-const double moveSpeed = 0.001;
+const double moveSpeed = 0.003;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
@@ -90,7 +90,7 @@ double shoulderOffset = 0.35;
 // Camera related stuff
 double zoom = 1;
 const double zoomSpeed = 0.1, zNear = 1, zFar = 5;
-Point camera = {1, 1, -2}, lookAt = {0, 0, 0};
+Point camera = {0, 1, -2}, lookAt = {0, 0, 0};
 
 // Nice moving around related stuff
 double moveRadius = 3;
@@ -107,7 +107,7 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
-AngleGroup robotAngles = {0, 30, 0};
+AngleGroup robotAngles = {0, 0, 0};
 AngleGroup headAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
 AngleGroup leftArmAngles = {0, 0, 0};
@@ -255,7 +255,7 @@ void drawBody() {
 void drawRobot() {
     glPushMatrix();
     glTranslated(robotCenter[0], robotCenter[1], robotCenter[2]);
-    glRotated(robotAngles[1], 0, 1, 0);
+    rotate(robotAngles);
 
     drawHead();
     drawBody();
@@ -276,7 +276,7 @@ void setupModelViewMatrix() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(camera[0], camera[1], camera[2], // camera position
-              robotCenter[0], robotCenter[1], lookAt[2], // look at point
+              lookAt[0], lookAt[1], lookAt[2], // look at point
               0, 1, 0); // up-vector
 }
 
@@ -315,7 +315,7 @@ void reset() {
     rightLegAngles = {0, 0, 0};
 }
 
-double oscillate(unsigned period, int from, int to) {
+double oscillate(unsigned period, double from, double to) {
     double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
     double coef = std::abs(2 * std::abs(frac - 0.5) - 1);
     return coef * (to - from) + from;
@@ -327,17 +327,19 @@ void idle() {
     unsigned period;
     reset();
     if (mode == Mode::JUMPING_JACKS) {
-        period = 0.8 * CLOCKS_PER_SEC;
+        period = 0.2 * CLOCKS_PER_SEC;
         leftArmAngles[2] = oscillate(period, -70, 70);
         leftForearmAngles[2] = oscillate(period, -60, 60);
         rightArmAngles[2] = oscillate(period, 70, -70);
         rightForearmAngles[2] = oscillate(period, 60, -60);
 
         leftLegAngles[2] = oscillate(period, 0, 40);
-        rightLegAngles[2] = oscillate(period, 0, -40);            
+        rightLegAngles[2] = oscillate(period, 0, -40);
+
+        robotCenter[1] = oscillate(period/2, 0, 0.1);
     } else if (mode == Mode::WALKING) {
         if (move) {
-            period = 1 * CLOCKS_PER_SEC;
+            period = 0.5 * CLOCKS_PER_SEC;
             headAngles[1] = oscillate(period, -5, 5);
             bodyAngles[1] = oscillate(period, -10, 10);
             leftArmAngles[0] = oscillate(period, 25, -25);
@@ -347,7 +349,9 @@ void idle() {
             rightLegAngles[0] = oscillate(period, 50, -50);
             leftThighAngles[0] = oscillate(period, -40, 0);
             rightThighAngles[0] = oscillate(period, 0, -40);
-        
+
+            robotCenter[1] = oscillate(period/2, 0, 0.1);
+
             robotCenter[0] += velocity[0];
             robotCenter[1] += velocity[1];
             robotCenter[2] += velocity[2];
@@ -390,14 +394,10 @@ bool is(int key, const std::string& keyName) {
 }
 
 Point polarToCartesian(double distance, double angle) {
-    TRACE(angle);
     double a = angle * M_PI / 180;
-    TRACE(a);
-    double s = abs(sin(a));
-    double c = abs(cos(a));
-    TRACE(s);
-    TRACE(c);
-    return {distance * c, 0, distance * s};
+    double s = sin(a);
+    double c = cos(a);
+    return {-distance * s, 0, -distance * c};
 }
 
 // Called when a normal key is pressed.
