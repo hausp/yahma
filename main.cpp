@@ -87,6 +87,7 @@ const double moveSpeed = 0.003;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
 double shoulderOffset = 0.35;
+const int bendingAngle = 20;
 
 // Camera related stuff
 double zoom = 1;
@@ -108,7 +109,7 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
-AngleGroup robotAngles = {0, 90, 0};
+AngleGroup robotAngles = {0, 60, 0};
 AngleGroup headAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
 AngleGroup leftArmAngles = {0, 0, 0};
@@ -350,27 +351,70 @@ double oscillate(unsigned period, double from, double to) {
     return coef * (to - from) + from;
 }
 
+void bend(unsigned period) {
+    leftLegAngles[0] = oscillate(period, 0, bendingAngle);
+    leftThighAngles[0] = oscillate(period, 0, -bendingAngle);
+    rightLegAngles[0] = oscillate(period, 0, bendingAngle);
+    rightThighAngles[0] = oscillate(period, 0, -bendingAngle);
+}
+
+void jump(unsigned period) {
+    static unsigned state = 0;
+    static bool wait = false;
+    const unsigned numStates = 4;
+    double frac = (static_cast<int>(globalTime) % period) / (period + 0.0);
+    if (frac > 0.99) {
+        if (!wait) {
+            state = (state + 1) % numStates;
+            wait = true;
+        }
+        return;
+    }
+    wait = false;
+    TRACE(state);
+    switch (state) {
+        case 0:
+        case 2:
+            bend(period);
+            // robotCenter[1] = oscillate(period/2, 0, 0.1);
+            break;
+        case 1:
+            leftLegAngles[2] = oscillate(period, 0, 40);
+            rightLegAngles[2] = oscillate(period, 0, -40);
+            break;
+        case 3:
+            leftLegAngles[2] = oscillate(period, 40, 0);
+            rightLegAngles[2] = oscillate(period, -40, 0);
+            break;
+    }
+}
+
 // Updates all animated properties and the screen.
 void idle() {
     globalTime = ftime()*100;
     unsigned period;
     reset();
     if (mode == Mode::JUMPING_JACKS) {
+        const bool testMode = false;
         period = 850;
         leftArmAngles[2] = oscillate(period, -70, 70);
         leftForearmAngles[2] = oscillate(period, -60, 60);
         rightArmAngles[2] = oscillate(period, 70, -70);
         rightForearmAngles[2] = oscillate(period, 60, -60);
 
-        leftLegAngles[2] = oscillate(period, 0, 40);
-        rightLegAngles[2] = oscillate(period, 0, -40);
+        if (testMode) {
+            jump(period);            
+        } else {
+            leftLegAngles[2] = oscillate(period, 0, 40);
+            rightLegAngles[2] = oscillate(period, 0, -40);
 
-        leftLegAngles[0] = oscillate(period, 20, 0);
-        leftThighAngles[0] = oscillate(period, -20, 0);
-        rightLegAngles[0] = oscillate(period, 20, 0);
-        rightThighAngles[0] = oscillate(period, -20, 0);
+            leftLegAngles[0] = oscillate(period, bendingAngle, 0);
+            leftThighAngles[0] = oscillate(period, -bendingAngle, 0);
+            rightLegAngles[0] = oscillate(period, bendingAngle, 0);
+            rightThighAngles[0] = oscillate(period, -bendingAngle, 0);
 
-        robotCenter[1] = oscillate(period/2, 0, 0.1);
+            robotCenter[1] = oscillate(period/2, 0, 0.1);
+        }
     } else if (mode == Mode::WALKING) {
         if (move) {
             period = 70;
@@ -441,16 +485,20 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
             mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
             break;
         case 'a':
+        case 'A':
             robotAngles[1] += rotationSpeed;
             break;
         case 'd':
+        case 'D':
             robotAngles[1] -= rotationSpeed;
             break;
         case 'w':
+        case 'W':
             velocity = polarToCartesian(moveSpeed, robotAngles[1]);
             move = true;
             break;
         case 's':
+        case 'S':
             velocity = polarToCartesian(-moveSpeed, robotAngles[1]);
             move = true;
             break;
