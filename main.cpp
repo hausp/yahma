@@ -79,7 +79,7 @@ enum class Mode {
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.005;
+const double moveSpeed = 0.016;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
@@ -87,7 +87,7 @@ const int bendingAngle = 20;
 
 // Camera related stuff
 double zoom = 1;
-const double zoomSpeed = 0.1, zNear = 2, zFar = 100;
+const double zoomSpeed = 0.1, zNear = 0.1, zFar = 100;
 Point camera = {0, 1, -3}, lookAt = {0, 0, 0};
 
 // Nice moving around related stuff
@@ -296,38 +296,49 @@ void drawRobot() {
 
 void drawGround() {
     glPushMatrix();
+    // glTranslated(0,
+    //              -(bodySize.height/2
+    //              + legSize.height
+    //              + thighSize.height
+    //              + jointRadius),
+    //              0);
+    // drawBox({100000000, 100000000, 100});
     glColor4f(0.5, 0.5, 0.5, 1);
     glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
     glMateriali(GL_FRONT, GL_SHININESS, 5);
     glBegin(GL_QUADS);
+        //bl
+        glVertex3f(-100,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + jointRadius),
+                   -100);
+        glNormal3f(0, 1, 0);
+        //br
+        glVertex3f(100,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + jointRadius),
+                   -100);
+        glNormal3f(0, 1, 0);
+        //tr
+        glVertex3f(100,
+                   -(bodySize.height/2
+                    + legSize.height
+                    + thighSize.height
+                    + jointRadius),
+                   100);
+        glNormal3f(0, 1, 0);
         //tl
-        glVertex3f(-10000.0,
+        glVertex3f(-100,
                    -(bodySize.height/2
                      + legSize.height
                      + thighSize.height
-                     + 2 * jointRadius),
-                   10000000.0);
-        //tr
-        glVertex3f(10000000.0,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + 2 * jointRadius),
-                   10000000.0);
-        //br
-        glVertex3f(10000000.0,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + 2 * jointRadius),
-                   -10000000.0);
-        //bl
-        glVertex3f(-10000000.0,
-                   -(bodySize.height/2
-                    + legSize.height
-                    + thighSize.height
-                    + 2 * jointRadius),
-                   -10000000.0);
+                     + jointRadius),
+                   100);
+        glNormal3f(0, 1, 0);
     glEnd();
     glPopMatrix();
 }
@@ -508,7 +519,7 @@ void idle() {
             leftThighAngles[0] = oscillate(period, -40, 0);
             rightThighAngles[0] = oscillate(period, 0, -40);
 
-            robotCenter[1] = oscillate(period/2, 0, 0.1);
+            robotCenter[1] = oscillate(period/2, -0.15, 0.1);
 
             velocity = polarToCartesian(move * moveSpeed, robotAngles[1]);
             robotCenter[0] += velocity[0];
@@ -526,6 +537,7 @@ bool init() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
@@ -537,10 +549,11 @@ bool init() {
     // glLightfv(GL_LIGHT0, GL_DIFFUSE, lightCoefs);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
-    glDepthFunc(GL_LESS);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
+
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
     reset();
     onMousePress(GLUT_LEFT_BUTTON, GLUT_DOWN, 0, 0);
