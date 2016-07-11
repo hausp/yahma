@@ -322,10 +322,10 @@ void reshape(int newWidth, int newHeight) {
 
 // Clears and displays the screen.
 void display() {
+    setupModelViewMatrix();
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-
-    setupModelViewMatrix();
 
     drawGround();
 
