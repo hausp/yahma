@@ -75,7 +75,7 @@ enum class Mode {
 };
 auto mode = Mode::JUMPING_JACKS;
 
-const double rotationSpeed = 2.5;
+const double rotationSpeed = 0.7;
 const double moveSpeed = 0.003;
 double neckHeight = 0.05;
 double jointRadius = 0.04;
@@ -328,7 +328,6 @@ void display() {
     setupModelViewMatrix();
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
     drawGround();
 
@@ -443,11 +442,13 @@ void jump(unsigned period) {
 
 // Updates all animated properties and the screen.
 void idle() {
-    globalTime = ftime()*100;
+    auto currentTime = ftime()*100;
+    auto diff = currentTime - globalTime;
+    globalTime = currentTime;
     unsigned period;
-    robotAngles[1] += rotationSpeed * spin;
+    robotAngles[1] += diff * rotationSpeed * spin;
     if (mode == Mode::JUMPING_JACKS) {
-        period = 85;
+        period = 120;
         jump(period);
     } else if (mode == Mode::WALKING) {
         if (move) {
@@ -567,23 +568,13 @@ void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     if (is(key, "LEFT")) {
-        camera[0] -= 0.1;
-        if (camera[0] < 0) {
-            camera[2] += 0.1;
-        } else {
-            camera[2] -= 0.1;
-        }
+        lookAt[0] += 0.1;
     } else if (is(key, "RIGHT")) {
-        camera[0] += 0.1;
-        if (camera[0] > 0) {
-            camera[2] += 0.1;
-        } else {
-            camera[2] -= 0.1;
-        }
+        lookAt[0] -= 0.1;
     } else if (is(key, "UP")) {
-        camera[1] += 0.1;
+        lookAt[1] += 0.1;
     } else if (is(key, "DOWN")) {
-        camera[1] -= 0.1;
+        lookAt[1] -= 0.1;
     } else if (is(key, "F1")) {
         zoom += zoomSpeed;
         updateProjectionMatrix();
