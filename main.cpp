@@ -78,7 +78,7 @@ enum class Mode {
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.003;
+const double moveSpeed = 0.005;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
@@ -370,6 +370,7 @@ void reset() {
     leftLegAngles = {0, 0, 0};
     rightThighAngles = {0, 0, 0};
     rightLegAngles = {0, 0, 0};
+    robotCenter[1] = 0;
 }
 
 Point polarToCartesian(double distance, double angle) {
@@ -482,7 +483,7 @@ void idle() {
         jump(period);
     } else if (mode == Mode::WALKING) {
         if (move != 0) {
-            period = 70;
+            period = 100;
             headAngles[1] = oscillate(period, -5, 5);
             bodyAngles[1] = oscillate(period, -10, 10);
             leftArmAngles[0] = oscillate(period, 25, -25);
