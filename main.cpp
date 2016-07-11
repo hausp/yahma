@@ -108,7 +108,7 @@ Size thighSize = {0.05, 0.25, 0.05};
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
-AngleGroup robotAngles = {0, 0, 0};
+AngleGroup robotAngles = {0, 90, 0};
 AngleGroup headAngles = {0, 0, 0};
 AngleGroup bodyAngles = {0, 0, 0};
 AngleGroup leftArmAngles = {0, 0, 0};
@@ -335,7 +335,7 @@ void idle() {
     unsigned period;
     reset();
     if (mode == Mode::JUMPING_JACKS) {
-        period = 60;
+        period = 850;
         leftArmAngles[2] = oscillate(period, -70, 70);
         leftForearmAngles[2] = oscillate(period, -60, 60);
         rightArmAngles[2] = oscillate(period, 70, -70);
@@ -343,6 +343,11 @@ void idle() {
 
         leftLegAngles[2] = oscillate(period, 0, 40);
         rightLegAngles[2] = oscillate(period, 0, -40);
+
+        leftLegAngles[0] = oscillate(period, 20, 0);
+        leftThighAngles[0] = oscillate(period, -20, 0);
+        rightLegAngles[0] = oscillate(period, 20, 0);
+        rightThighAngles[0] = oscillate(period, -20, 0);
 
         robotCenter[1] = oscillate(period/2, 0, 0.1);
     } else if (mode == Mode::WALKING) {
@@ -415,10 +420,10 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
             mode = (mode == Mode::WALKING) ? Mode::JUMPING_JACKS : Mode::WALKING;
             break;
         case 'a':
-            robotAngles[1] -= rotationSpeed;
+            robotAngles[1] += rotationSpeed;
             break;
         case 'd':
-            robotAngles[1] += rotationSpeed;
+            robotAngles[1] -= rotationSpeed;
             break;
         case 'w':
             velocity = polarToCartesian(moveSpeed, robotAngles[1]);
