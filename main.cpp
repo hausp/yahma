@@ -70,6 +70,7 @@ float ambientCoefs[] = {1, 1, 1, 0.7};
 float diffuseCoefs[] = {1, 1, 1, 0.7};
 float specularCoefs[] = {1, 1, 1, 0.2};
 int specularExponent = 90;
+Color4 stdColor = {0, 0, 0, 1};
 
 enum class Mode {
     WALKING,
@@ -130,10 +131,16 @@ void rotate(const AngleGroup& angles) {
 
 void drawBox(const Size& size,
          const Color4& color = {1, 1, 1, 1},
-         int specularCoef = 0) {
+         int specularCoef = 0,
+         bool sameAs = false) {
     glPushMatrix();
     glScaled(size.width, size.height, size.thickness);
     glColor4f(color[0], color[1], color[2], color[3]);
+    if (sameAs) {
+        glMaterialfv(GL_FRONT, GL_SPECULAR, &color[0]);
+    } else {
+        glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
+    }
     glMateriali(GL_FRONT, GL_SHININESS, specularCoef);
     glutSolidCube(1);
     glPopMatrix();
@@ -142,9 +149,15 @@ void drawBox(const Size& size,
 void drawSphere(double radius,
                 double x, double y,
                 const Color4& color = {1, 1, 1, 1},
-                int specularCoef = 0) {
+                int specularCoef = 0,
+                bool sameAs = false) {
     glPushMatrix();
     glColor4f(color[0], color[1], color[2], color[3]);
+    if (sameAs) {
+        glMaterialfv(GL_FRONT, GL_SPECULAR, &color[0]);
+    } else {
+        glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
+    }
     glMateriali(GL_FRONT, GL_SHININESS, specularCoef);
     glutSolidSphere(radius, x, y);
     glPopMatrix();
@@ -284,6 +297,7 @@ void drawRobot() {
 void drawGround() {
     glPushMatrix();
     glColor4f(0.5, 0.5, 0.5, 1);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
     glMateriali(GL_FRONT, GL_SHININESS, 5);
     glBegin(GL_QUADS);
         //tl
@@ -515,6 +529,7 @@ bool init() {
 
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
