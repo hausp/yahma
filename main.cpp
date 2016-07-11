@@ -492,6 +492,8 @@ bool init() {
     glDepthFunc(GL_LESS);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
+    glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
+
     reset();
     return true;
 }
@@ -541,10 +543,16 @@ void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
         case 'w':
         case 'W':
             move = false;
+            if (mode == Mode::WALKING) {
+                reset();
+            }
             break;
         case 's':
         case 'S':
             move = false;
+            if (mode == Mode::WALKING) {
+                reset();
+            }
             break;
     }
 }
