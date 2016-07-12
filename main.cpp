@@ -72,7 +72,7 @@ unsigned long long globalTime = 0;
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.007;
+const double moveSpeed = 0.005;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
