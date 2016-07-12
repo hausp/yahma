@@ -33,20 +33,23 @@ struct Size {
     double thickness;
 };
 
+enum class Mode {
+    WALKING,
+    JUMPING_JACKS
+};
+
 std::ostream& operator<<(std::ostream& stream, const std::array<double, 3>& array) {
     return stream << "(" << array[0] << "," << array[1] << "," << array[2] << ")";
 }
 
-// std::ostream& operator<<(std::ostream& stream, const Triangle& triangle) {
-//     return stream << "(" << triangle[0] << "," << triangle[1] << "," << triangle[2] << ")";
-// }
-
-// std::ostream& operator<<(std::ostream& stream, const Texture& texture) {
-//     return stream << "(" << texture[0] << "," << texture[1] << ")";
-// }
-
 // Globals
 std::string title = "YAHMA";
+unsigned winWidth = 800;
+unsigned winHeight = 600;
+const unsigned fixedWidth = 800;
+const unsigned fixedHeight = 600;
+bool fullscreen = false;
+
 std::unordered_map<std::string, int> keyMap = {
     {"F1", 1},
     {"F2", 2},
@@ -59,27 +62,17 @@ std::unordered_map<std::string, int> keyMap = {
     {"LSHIFT", 112},
     {"RSHIFT", 113}
 };
-unsigned winWidth = 800;
-unsigned winHeight = 600;
-GLuint texture;
-unsigned long long globalTime = 0;
 
 float lightPosition[] = {0, 50, 0, 1};
 float lightCoefs[] = {0.5, 0.5, 0.5, 1.0};
-float ambientCoefs[] = {1, 1, 1, 0.7};
-float diffuseCoefs[] = {1, 1, 1, 0.7};
-float specularCoefs[] = {1, 1, 1, 0.2};
-int specularExponent = 90;
 Color4 stdColor = {0, 0, 0, 1};
 
-enum class Mode {
-    WALKING,
-    JUMPING_JACKS
-};
+unsigned long long globalTime = 0;
+
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.01;
+const double moveSpeed = 0.007;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
@@ -547,8 +540,7 @@ bool init() {
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    // glLightfv(GL_LIGHT0, GL_AMBIENT, lightCoefs);
-    // glLightfv(GL_LIGHT0, GL_DIFFUSE, lightCoefs);
+    glLightfv(GL_LIGHT0, GL_AMBIENT_AND_DIFFUSE, lightCoefs);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -632,10 +624,19 @@ void onSpecialKeyPress(int key, int mouseX, int mouseY) {
         zoom -= zoomSpeed;
         updateProjectionMatrix();
     } else if (is(key, "F3")) {
+        if (!fullscreen) {
+            glutFullScreen();
+            fullscreen = true;
+        } else {
+            glutPositionWindow(0,0);
+            glutReshapeWindow(fixedWidth, fixedHeight);
+            fullscreen = false;
+        }
+    } else if (is(key, "F9")) {
         camera[0] = 1.18547;
         camera[1] = -0.663793;
         camera[2] = 2.6747;
-    }
+    } 
 }
 
 // Called when a special key (e.g arrows and shift) is released.
