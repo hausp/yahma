@@ -54,7 +54,7 @@ std::unordered_map<std::string, int> keyMap = {
     {"F1", 1},
     {"F2", 2},
     {"F3", 3},
-    {"F4", 4},
+    {"F9", 9},
     {"LEFT", 100},
     {"UP", 101},
     {"RIGHT", 102},
@@ -72,7 +72,7 @@ unsigned long long globalTime = 0;
 auto mode = Mode::JUMPING_JACKS;
 
 const double rotationSpeed = 0.7;
-const double moveSpeed = 0.005;
+const double moveSpeed = 0.004;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
@@ -509,12 +509,12 @@ void idle() {
             leftArmAngles[0] = oscillate(period, 25, -25);
             rightArmAngles[0] = oscillate(period, -25, 25);
 
-            leftLegAngles[0] = oscillate(period, -30, 30);
-            rightLegAngles[0] = oscillate(period, 30, -30);
+            leftLegAngles[0] = oscillate(period, -30, 40);
+            rightLegAngles[0] = oscillate(period, 40, -30);
             leftThighAngles[0] = oscillate(period, -30, 0);
             rightThighAngles[0] = oscillate(period, 0, -30);
 
-            robotCenter[1] = oscillate(period/2, -0.1, 0.1);
+            robotCenter[1] = oscillate(period/2, -0.07, 0.03);
 
             velocity = polarToCartesian(diff * move * moveSpeed, robotAngles[1]);
             robotCenter[0] += velocity[0];
