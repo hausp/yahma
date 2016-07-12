@@ -69,7 +69,7 @@ Color4 stdColor = {0, 0, 0, 1};
 
 unsigned long long globalTime = 0;
 
-auto mode = Mode::JUMPING_JACKS;
+auto mode = Mode::WALKING;
 
 const double rotationSpeed = 0.7;
 const double moveSpeed = 0.004;
