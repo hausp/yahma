@@ -83,6 +83,7 @@ const double moveSpeed = 0.01;
 const double neckHeight = 0.05;
 const double jointRadius = 0.04;
 const double shoulderOffset = 0.35;
+const double cameraMoveSpeed = 0.03;
 const int bendingAngle = 20;
 
 // Camera related stuff
@@ -97,6 +98,7 @@ int oldX, oldY;
 bool rotating = false;
 short move = 0;
 short spin = 0;
+std::array<short, 2> cameraMove = {0, 0};
 
 Size headSize = {0.3, 0.2, 0.2};
 Size bodySize = {0.4, 0.5, 0.2};
@@ -104,7 +106,7 @@ Size armSize = {0.125, 0.05, 0.05};
 Size forearmSize = {0.125, 0.05, 0.05};
 Size legSize = {0.05, 0.15, 0.05};
 Size thighSize = {0.05, 0.25, 0.05};
-double legTotalHeight = legSize.height + thighSize.height + jointRadius;
+double legTotalHeight = legSize.height + thighSize.height + jointRadius - 0.02;
 
 Point velocity = {0, 0, 0};
 Point robotCenter = {0, 0, 0};
@@ -184,10 +186,10 @@ void drawLeftArm() {
 
     rotate(leftArmAngles);
     glTranslated(armSize.width/2, 0, 0);
-    drawBox(armSize, {0.3, 0.1, 0.3, 1});
+    drawBox(armSize, {0.4, 0.4, 0.4, 1});
 
     glTranslated(armSize.width/2 + jointRadius/2, 0, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100);
 
     glPushMatrix();
     rotate(leftForearmAngles);
@@ -208,7 +210,7 @@ void drawRightArm() {
 
     rotate(rightArmAngles);
     glTranslated(-armSize.width/2, 0, 0);
-    drawBox(armSize, {0.3, 0.1, 0.3, 1});
+    drawBox(armSize, {0.4, 0.4, 0.4, 1});
 
     glTranslated(-armSize.width/2 - jointRadius/2, 0, 0);
     drawSphere(jointRadius, 100, 100);
@@ -232,10 +234,10 @@ void drawLeftLeg() {
 
     rotate(leftLegAngles);
     glTranslated(0, -legSize.height/2, 0);
-    drawBox(legSize);
+    drawBox(legSize, {0.4, 0.4, 0.4, 1});
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100);
 
     glPushMatrix();
     rotate(leftThighAngles);
@@ -256,11 +258,10 @@ void drawRightLeg() {
 
     rotate(rightLegAngles);
     glTranslated(0, -legSize.height/2, 0);
-
-    drawBox(legSize);
+    drawBox(legSize, {0.4, 0.4, 0.4, 1});
 
     glTranslated(0, -legSize.height/2 - jointRadius/2, 0);
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100);
 
     glPushMatrix();
     rotate(rightThighAngles);
@@ -297,38 +298,13 @@ void drawRobot() {
 
 void drawGround() {
     glPushMatrix();
-    // glTranslated(0,
-    //              -(bodySize.height/2
-    //              + legSize.height
-    //              + thighSize.height
-    //              + jointRadius),
-    //              0);
-    // drawBox({100000000, 100000000, 100});
+    glTranslated(0,
+                 -(bodySize.height/2 + legTotalHeight) - 50,
+                 0);
+    drawBox({100, 100, 100});
     glColor4f(0.5, 0.5, 0.5, 1);
     glMaterialfv(GL_FRONT, GL_SPECULAR, &stdColor[0]);
     glMateriali(GL_FRONT, GL_SHININESS, 5);
-    glBegin(GL_QUADS);
-        //bl
-        glVertex3f(-100,
-                   -(bodySize.height/2 + legTotalHeight),
-                   -100);
-        glNormal3f(0, 1, 0);
-        //br
-        glVertex3f(100,
-                   -(bodySize.height/2 + legTotalHeight),
-                   -100);
-        glNormal3f(0, 1, 0);
-        //tr
-        glVertex3f(100,
-                   -(bodySize.height/2 + legTotalHeight),
-                   100);
-        glNormal3f(0, 1, 0);
-        //tl
-        glVertex3f(-100,
-                   -(bodySize.height/2 + legTotalHeight),
-                   100);
-        glNormal3f(0, 1, 0);
-    glEnd();
     glPopMatrix();
 }
 
@@ -527,6 +503,8 @@ void idle() {
     globalTime = currentTime;
     unsigned period;
     robotAngles[1] += diff * rotationSpeed * spin;
+    lookAt[0] += diff * cameraMove[0] * cameraMoveSpeed;
+    lookAt[1] += diff * cameraMove[1] * cameraMoveSpeed;
     if (mode == Mode::JUMPING_JACKS) {
         period = 120;
         jump(period);
@@ -616,6 +594,7 @@ void onKeyPress(unsigned char key, int mouseX, int mouseY) {
     }
 }
 
+// Called when a normal key is released.
 void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
     switch (key) {
         case 'a':
@@ -639,19 +618,36 @@ void onKeyRelease(unsigned char key, int mouseX, int mouseY) {
 // Called when a special key (e.g arrows and shift) is pressed.
 void onSpecialKeyPress(int key, int mouseX, int mouseY) {
     if (is(key, "LEFT")) {
-        lookAt[0] += 0.1;
+        cameraMove[0] = -1;
     } else if (is(key, "RIGHT")) {
-        lookAt[0] -= 0.1;
+        cameraMove[0] = 1;
     } else if (is(key, "UP")) {
-        lookAt[1] += 0.1;
+        cameraMove[1] = 1;
     } else if (is(key, "DOWN")) {
-        lookAt[1] -= 0.1;
+        cameraMove[1] = -1;
     } else if (is(key, "F1")) {
         zoom += zoomSpeed;
         updateProjectionMatrix();
     } else if (is(key, "F2")) {
         zoom -= zoomSpeed;
         updateProjectionMatrix();
+    } else if (is(key, "F3")) {
+        camera[0] = 1.18547;
+        camera[1] = -0.663793;
+        camera[2] = 2.6747;
+    }
+}
+
+// Called when a special key (e.g arrows and shift) is released.
+void onSpecialKeyRelease(int key, int mouseX, int mouseY) {
+    if (is(key, "LEFT")) {
+        cameraMove[0] = 0;
+    } else if (is(key, "RIGHT")) {
+        cameraMove[0] = 0;
+    } else if (is(key, "UP")) {
+        cameraMove[1] = 0;
+    } else if (is(key, "DOWN")) {
+        cameraMove[1] = 0;
     }
 }
 
@@ -693,6 +689,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(onKeyPress);
     glutSpecialFunc(onSpecialKeyPress);
     glutKeyboardUpFunc(onKeyRelease);
+    glutSpecialUpFunc(onSpecialKeyRelease);
     glutMouseFunc(onMousePress);
     glutMotionFunc(onMouseMove);
     glutIdleFunc(idle);
