@@ -175,7 +175,7 @@ void drawLeftArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100, {0.1, 0.1, 0.3, 1});
 
     rotate(leftArmAngles);
     glTranslated(armSize.width/2, 0, 0);
@@ -199,7 +199,7 @@ void drawRightArm() {
                  bodySize.height * shoulderOffset,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100, {0.1, 0.1, 0.3, 1});
 
     rotate(rightArmAngles);
     glTranslated(-armSize.width/2, 0, 0);
@@ -223,7 +223,7 @@ void drawLeftLeg() {
                  -bodySize.height/2,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100, {0.1, 0.1, 0.3, 1});
 
     rotate(leftLegAngles);
     glTranslated(0, -legSize.height/2, 0);
@@ -247,7 +247,7 @@ void drawRightLeg() {
                  -bodySize.height/2,
                  0);
 
-    drawSphere(jointRadius, 100, 100, {0.3, 0.1, 0.3, 1});
+    drawSphere(jointRadius, 100, 100, {0.1, 0.1, 0.3, 1});
 
     rotate(rightLegAngles);
     glTranslated(0, -legSize.height/2, 0);
@@ -273,7 +273,7 @@ void drawBody() {
     drawLeftLeg();
     drawRightLeg();
 
-    drawBox(bodySize, {0.3, 0.1, 0.3, 1});
+    drawBox(bodySize, {0.1, 0.1, 0.3, 1});
     
     glPopMatrix();
 }
@@ -468,6 +468,7 @@ void jump(unsigned period) {
     double offset = legTotalHeight * (1 - c);
     switch (state) {
         case FLOOR_CLOSED:
+            robotCenter[1] = oscillate(currPeriod, 0, -0.02);
         case FLOOR_OPEN:
             bend(currPeriod);
             break;
