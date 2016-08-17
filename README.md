@@ -1,6 +1,6 @@
-Yet Another Hierarchical Model Animation
+#Yet Another Hierarchical Model Animation
 
-How to use:
+####How to use:
 
 * Space bar changes between walking mode and jumping jack mode;
 * WS moves the robot (in waking mode) and AD turns
